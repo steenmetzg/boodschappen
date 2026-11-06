@@ -376,12 +376,21 @@ h2 {
   padding-top: 10px;
 }
 
-/* Titelbalk: links de knop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
+/* Titelbalk van Mijn lijstjes: de titel met rechts de informatieknop en het tandwiel. */
+.main-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Titelbalk van een lijstje: links de terugknop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
 .list-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -617,4 +626,8 @@ h2 {
   .item {
     transition: none;
   }
+}
+
+.lists-screen .confirm {
+  margin: 0 0 12px;
 }

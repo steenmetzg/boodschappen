@@ -1,7 +1,8 @@
 # Specificatie: Lijstjes
 
 Status: **goedgekeurd door Greco op 6 november 2026**
-Versie: 1.0 (6 november 2026): eerste versie; items kun je afvinken (ze blijven doorgestreept op hun plek staan) en weggooien (zonder bevestiging of ongedaan maken), een heel lijstje weggooien kun je wel ongedaan maken (op verzoek van Greco), op basis van het plan "Plan Lijstjes PWA" en de werking en vormgeving van WoonWerk; de app heet Lijstjes (op verzoek van Greco, eerder "Boodschappen"; app-versie Lijstjes 1.0.0)
+Versie: 1.1 (6 november 2026): het scherm Mijn lijstjes is het hoofdscherm, met de informatieknop en het tandwiel; een lijstje open je door erop te tikken en met Terug ga je weer naar Mijn lijstjes; de app start in het laatst gebruikte lijstje; een lijstje met items weggooien vraagt eerst om bevestiging, zoals een rubriek in WoonWerk (F1, F2, F9, F12, F17, F21, F23; op verzoek van Greco, app-versie Lijstjes 1.1.0)
+Vorige versie: 1.0 (6 november 2026): eerste versie; items kun je afvinken (ze blijven doorgestreept op hun plek staan) en weggooien (zonder bevestiging of ongedaan maken), een heel lijstje weggooien kun je wel ongedaan maken (op verzoek van Greco), op basis van het plan "Plan Lijstjes PWA" en de werking en vormgeving van WoonWerk; de app heet Lijstjes (op verzoek van Greco, eerder "Boodschappen"; app-versie Lijstjes 1.0.0)
 
 ## 1. Doel
 
@@ -23,35 +24,36 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 - **Afvinken**: een item dat klaar is (gekocht, gedaan, ingepakt), vink je af. Het blijft op het lijstje staan,
   doorgestreept op dezelfde plek, tot je het weer aanvinkt of weggooit.
 - **Weggooien**: een item verdwijnt meteen van het lijstje, zonder bevestiging en zonder ongedaan maken.
-- **Huidig lijstje**: het lijstje dat je het laatst hebt geopend. De app opent daarmee.
+- **Huidig lijstje**: het lijstje dat je het laatst hebt geopend. De app start daarmee (F1).
+- **Mijn lijstjes**: het hoofdscherm met al je lijstjes (F9). Vanaf hier open je een lijstje.
 
 ## 4. Functies
 
 | Nr | Functie | Omschrijving |
 |----|---------|--------------|
-| F1 | Lijstje tonen | Het hoofdscherm toont één lijstje: bovenaan de naam van het lijstje (de titel), daaronder de items onder elkaar in de volgorde waarin ze zijn toegevoegd (de nieuwste onderaan), met dunne lijnen ertussen. Afgevinkte items (F6) blijven op hun plek staan, doorgestreept. Bij openen is dat het huidige lijstje. Een leeg lijstje toont in grijs: "Nog niets op dit lijstje. Typ of spreek hieronder een item in." |
-| F2 | Wisselen van lijstje | Links van de titel staat een knop met een lijsticoon die het scherm "Mijn lijstjes" opent (F9). Tik je daar op een lijstje, dan wordt dat het huidige lijstje en ga je terug naar het hoofdscherm. |
-| F3 | Boodschap typen | Onderaan het hoofdscherm staat altijd een tekstveld "Item toevoegen" met rechts een plusknop. Enter op het toetsenbord of de plusknop zet de tekst als item onderaan het lijstje. Het veld wordt leeg en blijft geselecteerd (het toetsenbord blijft open), zodat je meteen de volgende typt. Spaties aan het begin en eind tellen niet mee; een leeg veld doet niets. |
+| F1 | Lijstje tonen | Het scherm van een lijstje toont: bovenaan de naam van het lijstje (de titel), daaronder de items onder elkaar in de volgorde waarin ze zijn toegevoegd (de nieuwste onderaan), met dunne lijnen ertussen. Afgevinkte items (F6) blijven op hun plek staan, doorgestreept. Start je de app, dan opent hij met het huidige lijstje (het lijstje dat je het laatst gebruikte); is er nog nooit een lijstje geopend, dan start de app met Mijn lijstjes (F9). Een leeg lijstje toont in grijs: "Nog niets op dit lijstje. Typ of spreek hieronder een item in." |
+| F2 | Wisselen van lijstje | Links van de titel van een lijstje staat de terugknop (pijltje, zoals in WoonWerk) naar Mijn lijstjes (F9). Tik je daar op een lijstje, dan opent het scherm van dat lijstje en wordt het het huidige lijstje. |
+| F3 | Item typen | Onderaan het scherm van een lijstje staat altijd een tekstveld "Item toevoegen" met rechts een plusknop. Enter op het toetsenbord of de plusknop zet de tekst als item onderaan het lijstje. Het veld wordt leeg en blijft geselecteerd (het toetsenbord blijft open), zodat je meteen de volgende typt. Spaties aan het begin en eind tellen niet mee; een leeg veld doet niets. |
 | F4 | Meerdere tegelijk typen | Typ je een komma, dan wordt het meerdere items: "melk, brood, kaas" zet er drie op. |
 | F5 | Dubbel item | Staat een item al op het lijstje (hoofdletters en spaties aan begin en eind tellen niet mee), dan komt het er niet nog eens op. Onderaan staat dan kort de melding "Melk staat er al op". Is dat item afgevinkt, dan wordt het weer aangevinkt op dezelfde plek, met de melding "Melk staat weer op je lijstje". |
 | F6 | Afvinken | Elk item heeft links een rondje (aanraakgebied minstens 44 pixels). Tik je op het rondje of op de tekst, dan wordt het rondje blauw met een wit vinkje, de tekst grijs en doorgestreept. Het item blijft op zijn plek staan en schuift niet naar onderen. Nog eens tikken vinkt het weer aan, ook op dezelfde plek. |
 | F7 | Item weggooien | Elk item heeft rechts een klein kruisje "Weggooien" (aanraakgebied minstens 44 pixels). Tik je erop, of veeg je de regel naar links, dan is het item meteen weg: geen bevestiging en geen ongedaan maken. Dit werkt voor open en afgevinkte items. |
 | F8 | Lijstje leegmaken | Rechts in de titelbalk staat een knop met een prullenbakje. Die opent een kleine keuze met **Afgevinkte weggooien** (gooit alle afgevinkte items weg) en **Alles weggooien** (gooit alle items weg), en **Annuleren**. Het lijstje zelf blijft bestaan. Er is geen bevestiging en geen ongedaan maken, net als bij F7. Een keuze waarvoor niets op het lijstje staat, is inactief; bij een leeg lijstje is de prullenbakknop inactief. |
-| F9 | Scherm Mijn lijstjes | Het scherm "Mijn lijstjes" toont al je lijstjes onder elkaar, in de volgorde waarin je ze hebt gemaakt, elk met de naam en rechts het aantal open (niet afgevinkte) items in een lichtblauw rondje (zoals het label "vandaag" in WoonWerk). Het huidige lijstje heeft een blauwe streep links. Een knop "Terug" brengt je terug naar het hoofdscherm. |
-| F10 | Lijstje maken | Onderaan het scherm Mijn lijstjes staat de knop **Nieuw lijstje**. Die toont een tekstveld met de knoppen **Annuleren** en **Maken**. Na Maken wordt het nieuwe lijstje het huidige lijstje en ga je naar het hoofdscherm. Een lege naam of een naam die al bestaat, geeft een melding onder het veld ("Geef het lijstje een naam" of "Er is al een lijstje AH"). |
+| F9 | Scherm Mijn lijstjes | Het hoofdscherm "Mijn lijstjes" toont al je lijstjes onder elkaar, in de volgorde waarin je ze hebt gemaakt, elk met de naam en rechts het aantal open (niet afgevinkte) items in een lichtblauw rondje (zoals het label "vandaag" in WoonWerk). Het huidige lijstje heeft een blauwe streep links. Rechtsboven staan de informatieknop (F21) en het tandwiel (F17). Er is geen terugknop: dit is het eerste scherm. |
+| F10 | Lijstje maken | Onderaan het scherm Mijn lijstjes staat de knop **Nieuw lijstje**. Die toont een tekstveld met de knoppen **Annuleren** en **Maken**. Na Maken opent het nieuwe lijstje meteen en wordt het het huidige lijstje. Een lege naam of een naam die al bestaat, geeft een melding onder het veld ("Geef het lijstje een naam" of "Er is al een lijstje AH"). |
 | F11 | Naam wijzigen | Bij elk lijstje op het scherm Mijn lijstjes staat een potloodknop. Die maakt van de naam een tekstveld met **Annuleren** en **Bewaren**, met dezelfde controles als F10. |
-| F12 | Lijstje weggooien | Bij elk lijstje op het scherm Mijn lijstjes staat een prullenbakknop. Tik je erop, dan is het lijstje meteen weg, zonder bevestiging. Onderaan het scherm staat dan 10 seconden de melding "Lijstje AH weggegooid" met de knop **Ongedaan maken**, die het lijstje met al zijn items terugzet op zijn oude plek (en weer het huidige lijstje maakt als het dat was). Gooi je in die 10 seconden nog een lijstje weg, dan geldt de melding voor het laatste. Ga je naar een ander scherm, dan verdwijnt de melding en is het weggooien definitief. Gooi je het huidige lijstje weg, dan wordt het eerste lijstje van de lijst het huidige. Het laatste lijstje kun je niet weggooien (de knop is inactief); maak het leeg met F8 of geef het een andere naam. |
+| F12 | Lijstje weggooien | Bij elk lijstje op het scherm Mijn lijstjes staat een prullenbakknop. Is het lijstje leeg, dan is het meteen weg. Staan er items op (ook afgevinkte), dan eerst de bevestigingsvraag in de app, zoals bij een rubriek in WoonWerk: titel "Dit lijstje bevat items", tekst "AH heeft 7 items. Lijstje en items weggooien?", met **Annuleren** en **Weggooien**. Na het weggooien staat onderaan het scherm staat dan 10 seconden de melding "Lijstje AH weggegooid" met de knop **Ongedaan maken**, die het lijstje met al zijn items terugzet op zijn oude plek (en weer het huidige lijstje maakt als het dat was). Gooi je in die 10 seconden nog een lijstje weg, dan geldt de melding voor het laatste. Ga je naar een ander scherm, dan verdwijnt de melding en is het weggooien definitief. Gooi je het huidige lijstje weg, dan wordt het eerste lijstje van de lijst het huidige. Het laatste lijstje kun je niet weggooien (de knop is inactief); maak het leeg met F8 of geef het een andere naam. |
 | F13 | Eerste keer | Een nieuwe installatie begint met één leeg lijstje "Mijn 1e lijstje". |
 | F14 | Onthouden | Alle lijstjes, items en het huidige lijstje blijven bewaard na verversen of het sluiten van de browser (opslag op de telefoon zelf). |
 | F15 | Inspreken | Rechts naast het tekstveld (F3) staat een ronde, gevulde blauwe microfoonknop met een wit microfoonicoon, zoals in WoonWerk. Tik je erop, dan luistert de app (de knop wordt wit met een blauwe rand en boven het tekstveld staat "Luisteren… Zeg bijvoorbeeld: melk, brood en twee pakken koffie"). Wat je zegt, wordt opgesplitst bij "en", "komma" en pauzes die Chrome als komma schrijft, en elk item komt op het huidige lijstje (met F5 voor dubbele). Daarna staat onderaan kort "Toegevoegd: melk, brood, twee pakken koffie". Is er iets verkeerd verstaan, dan gooi je dat item weg met F7. De eerste letter van een item wordt een kleine letter. Tik je tijdens het luisteren nog eens op de knop, dan stopt het luisteren. Foutmeldingen zoals in WoonWerk (geen internet, geen toestemming, niets gehoord). |
 | F16 | Microfoon aan/uit | In de instellingen staat het onderdeel "Spraak" met één knop "Microfoon" (icoon met naam), zoals in WoonWerk F30. Standaard aan. Kan de browser geen spraak herkennen, dan is er nergens een microfoonknop. |
-| F17 | Instellingen | Een tandwielknop rechtsboven op het hoofdscherm opent het scherm "Instellingen en backup". Een knop "Terug" brengt je terug. |
+| F17 | Instellingen | Een tandwielknop rechtsboven op Mijn lijstjes opent het scherm "Instellingen en backup". Een knop "Terug" brengt je terug naar Mijn lijstjes. |
 | F18 | Backupmap kiezen | Zoals WoonWerk F10: met de mappenkiezer van de telefoon kies je een map voor backups; de app onthoudt die map en toont de naam. |
 | F19 | Backup maken | Zoals WoonWerk F11: de knop "Backup maken" slaat alle lijstjes op als één bestand, bijvoorbeeld `2026-11-06-lijstjes.json`. Zonder map gaat het bestand naar Downloads. |
 | F20 | Backup inlezen | Zoals WoonWerk F12: de knop "Backup inlezen" opent de bestandskiezer; na de bevestigingsmelding "Backup inlezen?" met de datum van de backup vervangt de inhoud alle huidige lijstjes. |
-| F21 | Informatie | Een knop met een i-icoon rechtsboven, links naast het tandwiel, opent het scherm "Over Lijstjes" met een korte uitleg van wat je met de app kunt, in de onderdelen: Wat doet Lijstjes?, Lijstjes, Inspreken (alleen als de browser spraak kent). |
+| F21 | Informatie | Een knop met een i-icoon rechtsboven op Mijn lijstjes, links naast het tandwiel, opent het scherm "Over Lijstjes" met een korte uitleg van wat je met de app kunt, in de onderdelen: Wat doet Lijstjes?, Lijstjes, Inspreken (alleen als de browser spraak kent). |
 | F22 | Installeren | Zoals WoonWerk F8: de app is een progressive web app die je kunt installeren en die schermvullend opent. |
-| F23 | Vraag om te installeren | Zoals WoonWerk F18 en F19: zolang de app niet is geïnstalleerd, staat onderaan een balk "Lijstjes als app installeren?" met **Niet nu** en **Installeren**; na "Niet nu" komt de vraag na 30 dagen terug of via **Vraag weer tonen** in de instellingen. |
+| F23 | Vraag om te installeren | Zoals WoonWerk F18 en F19: zolang de app niet is geïnstalleerd, staat onderaan Mijn lijstjes een balk "Lijstjes als app installeren?" met **Niet nu** en **Installeren**; na "Niet nu" komt de vraag na 30 dagen terug of via **Vraag weer tonen** in de instellingen. |
 | F24 | Offline gebruiken | Na de eerste keer openen werkt de app zonder internet, behalve inspreken. |
 | F25 | Updates | Zoals WoonWerk F14: een nieuwe versie wordt op de achtergrond opgehaald en is actief de volgende keer dat je de app opent. |
 | F26 | Versienummer | Helemaal onderaan de instellingen staat "Versie: n.n.n" in kleine grijze tekst, uit `package.json`. |
@@ -60,7 +62,7 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 
 | Nr | Criterium |
 |----|-----------|
-| AC1 | Bij de eerste keer openen staat er één leeg lijstje "Mijn 1e lijstje" met de grijze tekst voor een leeg lijstje (F1, F13). |
+| AC1 | Bij de eerste keer openen start de app met Mijn lijstjes, met één leeg lijstje "Mijn 1e lijstje"; tik je erop, dan zie je de grijze tekst voor een leeg lijstje (F1, F9, F13). |
 | AC2 | "melk" typen en Enter drukken zet "melk" onderaan het lijstje; het veld is daarna leeg en heeft de focus (F3). |
 | AC3 | "melk, brood, kaas" typen zet drie items op het lijstje (F4). |
 | AC4 | "Melk" toevoegen terwijl "melk" er al op staat, voegt niets toe en toont "Melk staat er al op" (F5). |
@@ -69,8 +71,8 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 | AC7 | **Afgevinkte weggooien** gooit alleen de afgevinkte items weg; **Alles weggooien** gooit alles weg en het lijstje blijft bestaan; **Annuleren** laat alles staan (F8). |
 | AC8 | Een nieuw lijstje "AH" maken maakt het het huidige lijstje; een tweede "ah" geeft "Er is al een lijstje AH" (F10). |
 | AC9 | De naam van een lijstje wijzigen werkt, met dezelfde controles als maken (F11). |
-| AC10 | Een lijstje weggooien gaat zonder vraag; **Ongedaan maken** zet het met alle items terug op dezelfde plek; na 10 seconden is de melding weg en het lijstje definitief weg; het laatste lijstje kan niet weg (F12). |
-| AC11 | Op het scherm Mijn lijstjes kiezen van een ander lijstje toont dat lijstje op het hoofdscherm (F2, F9). |
+| AC10 | Een leeg lijstje weggooien gaat zonder vraag; een lijstje met items pas na de vraag "Dit lijstje bevat items" (Annuleren laat het staan); **Ongedaan maken** zet het met alle items terug op dezelfde plek; na 10 seconden is de melding weg en het lijstje definitief weg; het laatste lijstje kan niet weg (F12). |
+| AC11 | Tikken op een lijstje op Mijn lijstjes opent dat lijstje; Terug brengt je naar Mijn lijstjes; na opnieuw starten opent de app met het laatst geopende lijstje (F1, F2, F9). |
 | AC12 | Na verversen staan alle lijstjes en items er nog en is hetzelfde lijstje open (F14). |
 | AC13 | Inspreken van "melk en brood komma kaas" zet drie items op het huidige lijstje (F15). |
 | AC14 | Staat de microfoon uit in de instellingen, of kent de browser geen spraak, dan is er geen microfoonknop (F16). |
@@ -78,7 +80,7 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 | AC16 | Alle sleutels in `localStorage` en de database voor de backupmap beginnen met `lijstjes-`, zodat de app nooit gegevens van WoonWerk leest of overschrijft (§8). |
 | AC17 | De vraag om te installeren verschijnt niet als de app al geïnstalleerd is, en na "Niet nu" pas weer na 30 dagen (F23). |
 | AC18 | Onderaan de instellingen staat het versienummer uit `package.json` (F26). |
-| AC19 | Het hoofdscherm past op een telefoonscherm van 360 × 640 pixels zonder dat je zijwaarts moet scrollen, en het tekstveld blijft in beeld als het toetsenbord open is (§6). |
+| AC19 | Elk scherm past op een telefoonscherm van 360 × 640 pixels zonder dat je zijwaarts moet scrollen, en het tekstveld blijft in beeld als het toetsenbord open is (§6). |
 
 ## 6. Ontwerp
 
@@ -87,7 +89,8 @@ Precies de stijl van WoonWerk (SPEC WoonWerk §6): strak, modern en minimalistis
 - **Rustig en modern**: lichtgrijze achtergrond (`#f5f6f8`), witte vlakken en knoppen zonder rand met een smalle, zachte schaduw, donkergrijze tekst en één accentkleur (diep blauw). Geen animaties, alleen een subtiele overgang bij tikken en het wegschuiven bij vegen (F7).
 - **Typografie**: het systeemlettertype van het apparaat, in twee groottes.
 - **Iconen**: Lucide-lijniconen, zoals in WoonWerk. Het app-icoon is een lijstje met vinkjes in dezelfde lijnstijl en kleuren als het WoonWerk-icoon.
-- **Indeling hoofdscherm**: bovenaan de lijstjesknop, de naam van het lijstje, en rechts de prullenbak, de informatieknop en het tandwiel. Daaronder de items in één wit vlak met dunne scheidingslijnen. Onderaan, vast in beeld, het tekstveld met plusknop en microfoon; daarboven de meldingen (F5, F15) en eventueel de installatievraag (F23).
+- **Indeling Mijn lijstjes** (hoofdscherm): bovenaan de titel "Mijn lijstjes" met rechts de informatieknop en het tandwiel, daaronder de lijstjes en de knop Nieuw lijstje. Onderaan eventueel de installatievraag (F23) en de melding na het weggooien van een lijstje (F12).
+- **Indeling van een lijstje**: bovenaan de terugknop, de naam van het lijstje en rechts de prullenbak. Daaronder de items in één wit vlak met dunne scheidingslijnen. Onderaan, vast in beeld, het tekstveld met plusknop en microfoon; daarboven de meldingen (F5, F15).
 - **Meldingen en bevestigingen**: wit met een blauwe streep links, zoals in WoonWerk; geen vensters van de browser.
 - **Mobiel eerst**: grote knoppen voor je duim (minstens 44 pixels hoog); op een groot scherm een smalle kolom in het midden.
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
-import { MAX_LIJSTJES, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
+import { Info as InfoIcon, Pencil, Plus, Settings as SettingsIcon, Trash2, Undo2 } from 'lucide-react'
+import ConfirmDialog from './ConfirmDialog'
+import { itemsText, MAX_LIJSTJES, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
 
 // Zo lang (in milliseconden) kun je het weggooien van een lijstje ongedaan maken (F12).
 export const UNDO_MS = 10000
@@ -20,7 +21,9 @@ interface Props {
   onRename: (id: string, naam: string) => void
   onDelete: (id: string) => Deleted | null
   onUndoDelete: (deleted: Deleted) => void
-  onClose: () => void
+  onOpenInfo: () => void
+  onOpenSettings: () => void
+  install: { show: boolean; install: () => void; notNow: () => void }
 }
 
 /** Een naam invullen, met Annuleren en een knop om te bewaren; met de foutmelding eronder (F10, F11). */
@@ -85,11 +88,24 @@ function NameForm({
   )
 }
 
-/** Het scherm "Mijn lijstjes" (F9 t/m F12). */
-export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, onDelete, onUndoDelete, onClose }: Props) {
+/** Het hoofdscherm "Mijn lijstjes" (F9 t/m F12). */
+export default function Lists({
+  lijstjes,
+  huidig,
+  onSelect,
+  onCreate,
+  onRename,
+  onDelete,
+  onUndoDelete,
+  onOpenInfo,
+  onOpenSettings,
+  install,
+}: Props) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [deleted, setDeleted] = useState<Deleted | null>(null)
+  // Een lijstje met items dat na bevestiging wordt weggegooid (F12).
+  const [confirmDelete, setConfirmDelete] = useState<Lijstje | null>(null)
 
   // De melding met Ongedaan maken verdwijnt na 10 seconden; dan is het weggooien definitief.
   useEffect(() => {
@@ -98,7 +114,14 @@ export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, 
     return () => clearTimeout(timer)
   }, [deleted])
 
+  function askRemove(l: Lijstje) {
+    // Staan er items op, dan eerst vragen of die ook weg mogen, zoals bij een rubriek in WoonWerk.
+    if (l.items.length > 0) setConfirmDelete(l)
+    else remove(l.id)
+  }
+
   function remove(id: string) {
+    setConfirmDelete(null)
     const result = onDelete(id)
     if (result) setDeleted(result)
     if (editing === id) setEditing(null)
@@ -106,11 +129,16 @@ export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, 
 
   return (
     <main className="app lists-screen">
-      <header className="settings-header">
-        <button type="button" className="back-button" aria-label="Terug" onClick={onClose}>
-          <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
-        </button>
+      <header className="main-header">
         <h1>Mijn lijstjes</h1>
+        <div className="header-actions">
+          <button type="button" className="icon-button" aria-label="Informatie" onClick={onOpenInfo}>
+            <InfoIcon size={20} strokeWidth={1.75} aria-hidden />
+          </button>
+          <button type="button" className="icon-button" aria-label="Instellingen en backup" onClick={onOpenSettings}>
+            <SettingsIcon size={20} strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
       </header>
 
       <ul className="lists" aria-label="Mijn lijstjes">
@@ -162,7 +190,7 @@ export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, 
                     className="icon-button"
                     aria-label={`Lijstje ${l.naam} weggooien`}
                     disabled={lijstjes.length <= 1}
-                    onClick={() => remove(l.id)}
+                    onClick={() => askRemove(l)}
                   >
                     <Trash2 size={18} strokeWidth={1.75} aria-hidden />
                   </button>
@@ -172,6 +200,16 @@ export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, 
           )
         })}
       </ul>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Dit lijstje bevat items"
+          text={`${confirmDelete.naam} heeft ${itemsText(confirmDelete.items.length)}. Lijstje en items weggooien?`}
+          confirmLabel="Weggooien"
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => remove(confirmDelete.id)}
+        />
+      )}
 
       {creating ? (
         <NameForm
@@ -201,22 +239,35 @@ export default function Lists({ lijstjes, huidig, onSelect, onCreate, onRename, 
         <p className="muted">Je hebt het maximum van {MAX_LIJSTJES} lijstjes.</p>
       )}
 
-      {deleted && (
+      {(deleted || install.show) && (
         <div className="bottom">
-          <section className="voice" aria-live="polite">
-            <p role="status">Lijstje {deleted.lijstje.naam} weggegooid</p>
-            <button
-              type="button"
-              className="undo-button"
-              onClick={() => {
-                onUndoDelete(deleted)
-                setDeleted(null)
-              }}
-            >
-              <Undo2 size={18} strokeWidth={1.75} aria-hidden />
-              Ongedaan maken
-            </button>
-          </section>
+          {install.show && (
+            <section className="install" aria-label="App installeren">
+              <p>Lijstjes als app installeren?</p>
+              <button type="button" onClick={install.notNow}>
+                Niet nu
+              </button>
+              <button type="button" className="install-now" onClick={install.install}>
+                Installeren
+              </button>
+            </section>
+          )}
+          {deleted && (
+            <section className="voice" aria-live="polite">
+              <p role="status">Lijstje {deleted.lijstje.naam} weggegooid</p>
+              <button
+                type="button"
+                className="undo-button"
+                onClick={() => {
+                  onUndoDelete(deleted)
+                  setDeleted(null)
+                }}
+              >
+                <Undo2 size={18} strokeWidth={1.75} aria-hidden />
+                Ongedaan maken
+              </button>
+            </section>
+          )}
         </div>
       )}
     </main>

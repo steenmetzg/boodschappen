@@ -155,15 +155,16 @@ export function saveLijstjes(lijstjes: Lijstje[]): void {
   }
 }
 
-/** Het laatst geopende lijstje; bestaat het niet meer, dan het eerste (F14). */
-export function loadCurrent(lijstjes: readonly Lijstje[]): string {
+/** Het laatst geopende lijstje (F1, F14); `null` als er nog nooit een lijstje is geopend. */
+export function loadCurrent(lijstjes: readonly Lijstje[]): string | null {
   try {
     const id = localStorage.getItem(CURRENT_KEY)
-    if (id && lijstjes.some((l) => l.id === id)) return id
+    if (!id) return null
+    // Bestaat het lijstje niet meer (bijv. na een backup), dan het eerste.
+    return lijstjes.some((l) => l.id === id) ? id : lijstjes[0].id
   } catch {
-    // Opslag niet beschikbaar.
+    return null
   }
-  return lijstjes[0].id
 }
 
 export function saveCurrent(id: string): void {

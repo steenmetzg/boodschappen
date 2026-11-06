@@ -27,9 +27,9 @@ export default function Info({ onClose }: Props) {
       <section className="setting info">
         <h2>Lijstjes</h2>
         <p>
-          Je kunt zoveel lijstjes maken als je wilt, elk met een eigen naam. Met de knop linksboven ga je naar Mijn
-          lijstjes, waar je lijstjes maakt, een andere naam geeft of weggooit. De app opent altijd het lijstje dat je het
-          laatst gebruikte.
+          Op Mijn lijstjes maak je zoveel lijstjes als je wilt, elk met een eigen naam, en geef je ze een andere naam of
+          gooi je ze weg. Tik op een lijstje om het te openen. De app start altijd met het lijstje dat je het laatst
+          gebruikte.
         </p>
       </section>
 

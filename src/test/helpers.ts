@@ -21,6 +21,11 @@ export async function typeItem(user: ReturnType<typeof userEvent.setup>, text: s
   await user.type(screen.getByRole('textbox', { name: 'Item toevoegen' }), `${text}{Enter}`)
 }
 
+/** De app start met het laatst gebruikte lijstje; zo start hij met het eerste lijstje in plaats van Mijn lijstjes. */
+export function rememberFirstList() {
+  localStorage.setItem('lijstjes-huidig', 'l1')
+}
+
 /** Zet lijstjes klaar in de opslag van de browser, alsof de app al eerder gebruikt is. */
 export function storeLists(lijstjes: Lijstje[], huidig?: string) {
   localStorage.setItem(LISTS_KEY, JSON.stringify(lijstjes))

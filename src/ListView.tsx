@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
-import { Check, Info as InfoIcon, List, Mic, Plus, Settings as SettingsIcon, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Check, Mic, Plus, Trash2, X } from 'lucide-react'
 import { MAX_TEKST, type Item, type Lijstje } from './lists'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
@@ -17,10 +17,7 @@ interface Props {
   onToggle: (id: string) => void
   onRemove: (id: string) => void
   onClear: (which: 'af' | 'alles') => void
-  onOpenLists: () => void
-  onOpenInfo: () => void
-  onOpenSettings: () => void
-  install: { show: boolean; install: () => void; notNow: () => void }
+  onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
 
@@ -79,7 +76,7 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
   )
 }
 
-/** Het hoofdscherm met één lijstje (F1 t/m F8, F15). */
+/** Het scherm van één lijstje (F1 t/m F8, F15). */
 export default function ListView({
   lijstje,
   notice,
@@ -88,10 +85,7 @@ export default function ListView({
   onToggle,
   onRemove,
   onClear,
-  onOpenLists,
-  onOpenInfo,
-  onOpenSettings,
-  install,
+  onBack,
   mic,
 }: Props) {
   const [text, setText] = useState('')
@@ -115,8 +109,8 @@ export default function ListView({
   return (
     <main className="app list-screen">
       <header className="list-header">
-        <button type="button" className="icon-button" aria-label="Mijn lijstjes" onClick={onOpenLists}>
-          <List size={20} strokeWidth={1.75} aria-hidden />
+        <button type="button" className="back-button" aria-label="Terug naar Mijn lijstjes" onClick={onBack}>
+          <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
         </button>
         <h1>{lijstje.naam}</h1>
         <div className="header-actions">
@@ -129,12 +123,6 @@ export default function ListView({
             onClick={() => setClearing(!clearing)}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button type="button" className="icon-button" aria-label="Informatie" onClick={onOpenInfo}>
-            <InfoIcon size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button type="button" className="icon-button" aria-label="Instellingen en backup" onClick={onOpenSettings}>
-            <SettingsIcon size={20} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
       </header>
@@ -167,17 +155,6 @@ export default function ListView({
       )}
 
       <div className="bottom">
-        {install.show && (
-          <section className="install" aria-label="App installeren">
-            <p>Lijstjes als app installeren?</p>
-            <button type="button" onClick={install.notNow}>
-              Niet nu
-            </button>
-            <button type="button" className="install-now" onClick={install.install}>
-              Installeren
-            </button>
-          </section>
-        )}
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>

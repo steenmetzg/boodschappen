@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { SPEECH_KEY, splitSpoken } from './speech'
-import { itemTexts, typeItem } from './test/helpers'
+import { itemTexts, rememberFirstList, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
@@ -44,6 +44,7 @@ class FakeRecognition {
 const win = window as unknown as { webkitSpeechRecognition?: unknown }
 
 beforeEach(() => {
+  rememberFirstList()
   FakeRecognition.last = null
   win.webkitSpeechRecognition = FakeRecognition
 })
@@ -109,10 +110,12 @@ describe('AC14: microfoon aan en uit', () => {
   it('haalt de microfoonknop weg als de microfoon in de instellingen uit staat', async () => {
     const user = userEvent.setup()
     render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Terug naar Mijn lijstjes' }))
     await user.click(screen.getByRole('button', { name: 'Instellingen en backup' }))
     await user.click(screen.getByRole('button', { name: 'Microfoon' }))
     expect(localStorage.getItem(SPEECH_KEY)).toBe('nee')
     await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'Mijn 1e lijstje' }))
     expect(screen.queryByRole('button', { name: 'Inspreken' })).not.toBeInTheDocument()
   })
 

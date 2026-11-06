@@ -49,6 +49,9 @@ afterEach(() => {
 })
 
 async function openSettings(user: ReturnType<typeof userEvent.setup>) {
+  // De app kan met een lijstje starten; het tandwiel staat op Mijn lijstjes.
+  const back = screen.queryByRole('button', { name: 'Terug naar Mijn lijstjes' })
+  if (back) await user.click(back)
   await user.click(screen.getByRole('button', { name: 'Instellingen en backup' }))
 }
 
@@ -84,7 +87,7 @@ describe('AC15: backup maken en inlezen', () => {
     await user.upload(screen.getByLabelText('Backupbestand'), backupFile(saved))
     await user.click(within(await screen.findByRole('alertdialog', { name: 'Backup inlezen?' })).getByRole('button', { name: 'Inlezen' }))
     await user.click(screen.getByRole('button', { name: 'Terug' }))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Klussen')
+    expect(screen.getByRole('button', { name: 'Klussen, 1 open' })).toHaveAttribute('aria-current', 'true')
     expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)).toEqual(backup.lijstjes)
   })
 
@@ -106,6 +109,7 @@ describe('AC15: backup maken en inlezen', () => {
     await user.click(within(question).getByRole('button', { name: 'Inlezen' }))
     expect(screen.getByRole('status')).toHaveTextContent('Backup ingelezen: 2 lijstjes en 3 items.')
     await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'AH, 1 open' }))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('AH')
     expect(itemTexts()).toEqual(['melk', 'brood'])
     expect(itemButton('brood')).toHaveAttribute('aria-pressed', 'true')
@@ -121,6 +125,7 @@ describe('AC15: backup maken en inlezen', () => {
     await user.upload(screen.getByLabelText('Backupbestand'), backupFile(backup))
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Annuleren' }))
     await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'Iets anders, 1 open' }))
     expect(itemTexts()).toEqual(['blijft'])
   })
 
@@ -133,6 +138,7 @@ describe('AC15: backup maken en inlezen', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Dit bestand is geen backup van Lijstjes.'))
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'Iets anders, 1 open' }))
     expect(itemTexts()).toEqual(['blijft'])
   })
 
@@ -156,6 +162,6 @@ describe('AC18: versienummer', () => {
     const user = userEvent.setup()
     render(<App />)
     await openSettings(user)
-    expect(screen.getByText('Versie: 1.0.0')).toBeInTheDocument()
+    expect(screen.getByText('Versie: 1.1.0')).toBeInTheDocument()
   })
 })

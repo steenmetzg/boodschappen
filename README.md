@@ -40,8 +40,8 @@ Je lijstjes worden alleen op die telefoon bewaard. Maak daarom af en toe een bac
 ## Opbouw
 
 - `src/App.tsx`: wisselt tussen de schermen en houdt de lijstjes bij
-- `src/ListView.tsx`: het hoofdscherm met één lijstje: typen, inspreken, afvinken, weggooien, leegmaken
-- `src/Lists.tsx`: het scherm Mijn lijstjes: maken, andere naam geven, weggooien met ongedaan maken
+- `src/ListView.tsx`: het scherm van één lijstje: typen, inspreken, afvinken, weggooien, leegmaken
+- `src/Lists.tsx`: het hoofdscherm Mijn lijstjes: maken, andere naam geven, weggooien met ongedaan maken
 - `src/lists.ts`: de gegevens, bewaren en ophalen, dubbele items herkennen
 - `src/speech.ts`: inspreken (het luisteren komt uit WoonWerk) en een zin opsplitsen in items
 - `src/Settings.tsx`: het scherm Instellingen en backup

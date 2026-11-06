@@ -1,14 +1,19 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { CURRENT_KEY, LISTS_KEY } from './lists'
-import { itemButton, itemTexts, list, storeLists, typeItem } from './test/helpers'
+import { itemButton, itemTexts, list, rememberFirstList, storeLists, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
   storeFolder: async () => {},
 }))
+
+// De meeste tests beginnen op het scherm van een lijstje, alsof de app al eerder gebruikt is.
+beforeEach(() => {
+  rememberFirstList()
+})
 
 afterEach(() => {
   vi.useRealTimers()
@@ -19,8 +24,15 @@ function title() {
 }
 
 describe('AC1: eerste keer openen', () => {
-  it('toont één leeg lijstje "Mijn 1e lijstje" met de grijze tekst', () => {
+  it('start met Mijn lijstjes met één leeg lijstje "Mijn 1e lijstje"', async () => {
+    localStorage.clear()
+    const user = userEvent.setup()
     render(<App />)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    expect(screen.queryByRole('button', { name: /Terug/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Informatie' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Instellingen en backup' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mijn 1e lijstje' }))
     expect(title()).toHaveTextContent('Mijn 1e lijstje')
     expect(screen.getByText('Nog niets op dit lijstje. Typ of spreek hieronder een item in.')).toBeInTheDocument()
     expect(itemTexts()).toEqual([])
@@ -200,7 +212,7 @@ describe('AC7: lijstje leegmaken', () => {
 })
 
 async function openMyLists(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Mijn lijstjes' }))
+  await user.click(screen.getByRole('button', { name: 'Terug naar Mijn lijstjes' }))
 }
 
 describe('AC8: lijstje maken', () => {
@@ -252,26 +264,50 @@ describe('AC9: naam wijzigen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Er is al een lijstje Klussen.')
     await user.clear(field)
     await user.type(field, 'Jumbo{Enter}')
-    expect(screen.getByRole('button', { name: 'Jumbo' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'Jumbo' }))
     expect(title()).toHaveTextContent('Jumbo')
   })
 })
 
 describe('AC10: lijstje weggooien', () => {
-  it('gooit zonder vraag weg en zet het met Ongedaan maken terug op dezelfde plek', async () => {
+  it('gooit een leeg lijstje zonder vraag weg', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    await user.click(screen.getByRole('button', { name: 'Lijstje Klussen weggooien' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Klussen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Lijstje Klussen weggegooid')
+  })
+
+  it('vraagt eerst om bevestiging als er items op staan; Annuleren laat het staan', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk', ['brood', true]]), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
+    const question = screen.getByRole('alertdialog', { name: 'Dit lijstje bevat items' })
+    expect(question).toHaveTextContent('AH heeft 2 items. Lijstje en items weggooien?')
+    await user.click(within(question).getByRole('button', { name: 'Annuleren' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'AH, 1 open' })).toBeInTheDocument()
+  })
+
+  it('gooit na bevestiging weg en zet het met Ongedaan maken terug op dezelfde plek', async () => {
     const user = userEvent.setup()
     storeLists([list('a', 'AH', ['melk', ['brood', true]]), list('b', 'Klussen'), list('c', 'Vakantie')], 'a')
     render(<App />)
     await openMyLists(user)
     await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Weggooien' }))
     expect(screen.queryByRole('button', { name: /^AH/ })).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Lijstje AH weggegooid')
     await user.click(screen.getByRole('button', { name: 'Ongedaan maken' }))
     const names = screen.getAllByRole('listitem').map((li) => li.querySelector('.list-name')?.textContent)
     expect(names).toEqual(['AH', 'Klussen', 'Vakantie'])
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
+    expect(screen.getByRole('button', { name: 'AH, 1 open' })).toHaveAttribute('aria-current', 'true')
+    await user.click(screen.getByRole('button', { name: 'AH, 1 open' }))
     expect(title()).toHaveTextContent('AH')
     expect(itemTexts()).toEqual(['melk', 'brood'])
     expect(itemButton('brood')).toHaveAttribute('aria-pressed', 'true')
@@ -283,8 +319,7 @@ describe('AC10: lijstje weggooien', () => {
     render(<App />)
     await openMyLists(user)
     await user.click(screen.getByRole('button', { name: 'Lijstje Klussen weggooien' }))
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
-    expect(title()).toHaveTextContent('AH')
+    expect(screen.getByRole('button', { name: 'AH' })).toHaveAttribute('aria-current', 'true')
   })
 
   it('maakt het weggooien na 10 seconden definitief', async () => {
@@ -313,8 +348,8 @@ describe('AC10: lijstje weggooien', () => {
   })
 })
 
-describe('AC11: ander lijstje kiezen', () => {
-  it('toont het gekozen lijstje op het hoofdscherm, met het aantal open items erbij', async () => {
+describe('AC11: een lijstje openen vanaf Mijn lijstjes', () => {
+  it('opent het lijstje waarop je tikt, met het aantal open items erbij, en Terug gaat naar Mijn lijstjes', async () => {
     const user = userEvent.setup()
     storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen', ['lamp', ['kraan', true], 'deur'])], 'a')
     render(<App />)
@@ -325,6 +360,22 @@ describe('AC11: ander lijstje kiezen', () => {
     await user.click(screen.getByRole('button', { name: 'Klussen, 2 open' }))
     expect(title()).toHaveTextContent('Klussen')
     expect(itemTexts()).toEqual(['lamp', 'kraan', 'deur'])
+    await openMyLists(user)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    expect(screen.getByRole('button', { name: 'Klussen, 2 open' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('start na opnieuw openen met het laatst geopende lijstje', async () => {
+    const user = userEvent.setup()
+    localStorage.clear()
+    storeLists([list('a', 'AH'), list('b', 'Klussen')])
+    const { unmount } = render(<App />)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    await user.click(screen.getByRole('button', { name: 'Klussen' }))
+    await openMyLists(user)
+    unmount()
+    render(<App />)
+    expect(title()).toHaveTextContent('Klussen')
   })
 })
 
