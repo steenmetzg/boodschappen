@@ -199,7 +199,7 @@ export default function ListView({
           <button
             type="button"
             className="icon-button"
-            aria-label="Lijstje leegmaken"
+            aria-label="Lijstje weggooien"
             aria-expanded={clearing}
             disabled={items.length === 0 && !onDeleteList}
             onClick={() => setClearing(!clearing)}
@@ -209,16 +209,16 @@ export default function ListView({
         </div>
         {/* De keuze staat in de vaste titelbalk, zodat hij ook in beeld komt als je omlaag gescrold bent (F8). */}
         {clearing && (
-          <section className="confirm clear-choice" aria-label="Lijstje leegmaken">
-            <strong>Lijstje {lijstje.naam} leegmaken</strong>
+          <section className="confirm clear-choice" aria-label="Lijstje weggooien">
+            <strong>Lijstje {lijstje.naam} weggooien</strong>
             <div className="confirm-buttons">
               <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
                 Afgevinkte weggooien
               </button>
-              <button type="button" disabled={items.length === 0} onClick={() => clear('alles')}>
-                Alles weggooien
+              <button type="button" className="confirm-yes" disabled={items.length === 0} onClick={() => clear('alles')}>
+                Alle items weggooien
               </button>
-              <button type="button" className="confirm-yes wide" disabled={!onDeleteList} onClick={() => onDeleteList?.()}>
+              <button type="button" className="wide" disabled={!onDeleteList} onClick={() => onDeleteList?.()}>
                 Items én het lijstje weggooien
               </button>
               <button type="button" className="cancel" onClick={() => setClearing(false)}>

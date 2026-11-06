@@ -189,10 +189,10 @@ describe('AC6: item weggooien', () => {
   })
 })
 
-describe('AC7: lijstje leegmaken', () => {
+describe('AC7: lijstje of items weggooien', () => {
   async function openClear(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'Lijstje leegmaken' }))
-    return screen.getByRole('region', { name: 'Lijstje leegmaken' })
+    await user.click(screen.getByRole('button', { name: 'Lijstje weggooien' }))
+    return screen.getByRole('region', { name: 'Lijstje weggooien' })
   }
 
   it('Afgevinkte weggooien gooit alleen de afgevinkte items weg', async () => {
@@ -204,11 +204,11 @@ describe('AC7: lijstje leegmaken', () => {
     expect(itemTexts()).toEqual(['melk', 'kaas'])
   })
 
-  it('Alles weggooien gooit alles weg en het lijstje blijft bestaan', async () => {
+  it('Alle items weggooien gooit alles weg en het lijstje blijft bestaan', async () => {
     const user = userEvent.setup()
     render(<App />)
     await typeItem(user, 'melk, brood')
-    await user.click(within(await openClear(user)).getByRole('button', { name: 'Alles weggooien' }))
+    await user.click(within(await openClear(user)).getByRole('button', { name: 'Alle items weggooien' }))
     expect(itemTexts()).toEqual([])
     expect(title()).toHaveTextContent('Mijn 1e lijstje')
   })
@@ -244,9 +244,9 @@ describe('AC7: lijstje leegmaken', () => {
     cleanup()
     storeLists([list('l1', 'AH'), list('b', 'Klussen')], 'l1')
     render(<App />)
-    expect(screen.getByRole('button', { name: 'Lijstje leegmaken' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Lijstje weggooien' })).toBeEnabled()
     const choice = await openClear(user)
-    expect(within(choice).getByRole('button', { name: 'Alles weggooien' })).toBeDisabled()
+    expect(within(choice).getByRole('button', { name: 'Alle items weggooien' })).toBeDisabled()
     await user.click(within(choice).getByRole('button', { name: 'Items én het lijstje weggooien' }))
     expect(listNames()).toEqual(['Klussen'])
   })
@@ -257,13 +257,13 @@ describe('AC7: lijstje leegmaken', () => {
     await typeItem(user, 'melk')
     await user.click(within(await openClear(user)).getByRole('button', { name: 'Annuleren' }))
     expect(itemTexts()).toEqual(['melk'])
-    expect(screen.queryByRole('region', { name: 'Lijstje leegmaken' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Lijstje weggooien' })).not.toBeInTheDocument()
   })
 
   it('maakt Afgevinkte weggooien inactief zonder afgevinkte items, en de prullenbak bij een leeg lijstje', async () => {
     const user = userEvent.setup()
     render(<App />)
-    expect(screen.getByRole('button', { name: 'Lijstje leegmaken' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Lijstje weggooien' })).toBeDisabled()
     await typeItem(user, 'melk')
     expect(within(await openClear(user)).getByRole('button', { name: 'Afgevinkte weggooien' })).toBeDisabled()
   })
