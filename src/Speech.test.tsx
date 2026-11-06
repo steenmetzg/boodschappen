@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { SPEECH_KEY, splitSpoken } from './speech'
+import { bestSpoken, SPEECH_KEY, splitSpoken } from './speech'
 import { itemTexts, rememberFirstList, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
@@ -60,6 +60,18 @@ describe('splitSpoken', () => {
     expect(splitSpoken('wc-papier')).toEqual(['wc-papier'])
   })
 
+  it('splitst ook als Chrome "komma" anders schrijft', () => {
+    expect(splitSpoken('melk Komma brood comma kaas koma eieren coma thee')).toEqual(['melk', 'brood', 'kaas', 'eieren', 'thee'])
+    expect(splitSpoken('melk komma. Brood')).toEqual(['melk', 'brood'])
+    expect(splitSpoken('komma melk komma')).toEqual(['melk'])
+    expect(splitSpoken('kommando en kommapunt')).toEqual(['kommando en kommapunt'])
+  })
+
+  it('kiest de verstane versie met de meeste items', () => {
+    expect(bestSpoken(['melk karma brood', 'melk komma brood'])).toEqual(['melk', 'brood'])
+    expect(bestSpoken(['Jan en Piet ophalen', 'jan komma Piet ophalen'])).toEqual(['jan', 'piet ophalen'])
+  })
+
   it('splitst niet bij "en"', () => {
     expect(splitSpoken('Jan en Piet ophalen van Schiphol')).toEqual(['jan en Piet ophalen van Schiphol'])
     expect(splitSpoken('bananen en tomaten komma kaas')).toEqual(['bananen en tomaten', 'kaas'])
@@ -77,6 +89,14 @@ describe('AC13: items inspreken', () => {
     FakeRecognition.last!.hear('Melk komma brood komma kaas')
     expect(itemTexts()).toEqual(['melk', 'brood', 'kaas'])
     expect(screen.getByRole('status')).toHaveTextContent('Toegevoegd: melk, brood, kaas.')
+  })
+
+  it('gebruikt de verstane versie waarin "komma" wel herkend is', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Inspreken' }))
+    FakeRecognition.last!.hear('melk karma brood', 'melk comma brood')
+    expect(itemTexts()).toEqual(['melk', 'brood'])
   })
 
   it('voegt een ingesproken item dat er al op staat niet nog eens toe', async () => {

@@ -17,7 +17,7 @@ import {
   type Lijstje,
 } from './lists'
 import Settings from './Settings'
-import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, splitSpoken, useSpeech } from './speech'
+import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, useSpeech } from './speech'
 
 // Zo lang blijft een melding onderaan het lijstje staan, in milliseconden.
 const NOTICE_MS = 5000
@@ -32,7 +32,7 @@ export default function App() {
   const [speechEnabled, setSpeechEnabled] = useState(loadSpeechEnabled)
   const installPrompt = useInstallPrompt()
   const speech = useSpeech(
-    (alternatives) => addTexts(splitSpoken(alternatives[0]), true),
+    (alternatives) => addTexts(bestSpoken(alternatives), true),
     (text) => setNotice({ kind: 'error', text }),
   )
   const lijstje = lijstjes.find((l) => l.id === huidig) ?? lijstjes[0]

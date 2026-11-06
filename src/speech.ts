@@ -5,16 +5,19 @@ import { MAX_TEKST } from './lists'
 // Alles van de spraakbediening staat in dit bestand, zodat het makkelijk weer weg kan.
 // Het luisteren zelf (useSpeech) komt uit WoonWerk.
 
+// Het woord "komma" zoals Chrome het soms verstaat: komma, comma, koma of coma.
+const KOMMA = /\b[kc]omm?a\b[.!?]?/gi
+
 /**
  * Een ingesproken zin wordt opgesplitst bij het woord "komma" en bij komma's, niet bij "en", zodat
  * "Jan en Piet ophalen" één item blijft; de eerste letter wordt een kleine letter.
  */
 export function splitSpoken(text: string): string[] {
   return text
-    .split(/,|\s+komma\s+/i)
+    .replace(KOMMA, ',')
+    .split(/[,;]/)
     .map((t) => t.replace(/[.!?]+$/, '').trim())
-    .map((t) => t.replace(/^komma\s+/i, '').replace(/\s+komma$/i, '').trim())
-    .filter((t) => t.length > 0 && !/^komma$/i.test(t))
+    .filter((t) => t.length > 0)
     .map((t) => (t.charAt(0).toLocaleLowerCase('nl') + t.slice(1)).slice(0, MAX_TEKST).trim())
 }
 
@@ -73,6 +76,19 @@ export function saveSpeechEnabled(on: boolean): void {
   } catch {
     // Opslag niet beschikbaar; de instelling geldt dan alleen zolang de app open is.
   }
+}
+
+/**
+ * Kiest uit wat Chrome mogelijk heeft verstaan (beste eerst) de versie met de meeste items, zodat een
+ * "komma" die alleen in een andere versie goed verstaan is, toch telt (F15).
+ */
+export function bestSpoken(alternatives: string[]): string[] {
+  let best: string[] = []
+  for (const alternative of alternatives) {
+    const items = splitSpoken(alternative)
+    if (items.length > best.length) best = items
+  }
+  return best
 }
 
 /**
