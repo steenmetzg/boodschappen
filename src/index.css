@@ -765,7 +765,7 @@ h2 {
   margin: 0;
 }
 
-/* Op Mijn lijstjes staat geen microfoon rechts op de invoerregel. */
-.lists-screen .add-item {
+/* Op Mijn lijstjes zonder microfoon wat ruimte rechts van het tekstveld. */
+.lists-screen .add-item:not(:has(.mic)) {
   padding-right: 8px;
 }

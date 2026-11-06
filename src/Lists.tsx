@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
-import { GripVertical, Info as InfoIcon, Pencil, Settings as SettingsIcon, Trash2, Undo2 } from 'lucide-react'
+import { GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
+import type { Notice } from './ListView'
 import { itemsText, MAX_LIJSTJES, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
@@ -27,6 +28,9 @@ interface Props {
   onOpenInfo: () => void
   onOpenSettings: () => void
   install: { show: boolean; install: () => void; notNow: () => void }
+  notice: Notice | null
+  onCloseNotice: () => void
+  mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
 
 interface RowProps {
@@ -178,6 +182,9 @@ export default function Lists({
   onOpenInfo,
   onOpenSettings,
   install,
+  notice,
+  onCloseNotice,
+  mic,
 }: Props) {
   const [naam, setNaam] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
@@ -287,6 +294,18 @@ export default function Lists({
                   setError(null)
                 }}
               />
+              {mic.show && (
+                // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
+                <button
+                  type="button"
+                  className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
+                  aria-label={mic.listening ? 'Stoppen met luisteren' : 'Naam inspreken'}
+                  aria-pressed={mic.listening}
+                  onClick={mic.listening ? mic.stop : mic.start}
+                >
+                  <Mic size={16} strokeWidth={2} aria-hidden />
+                </button>
+              )}
             </form>
           ) : (
             <p className="muted max-lists">Je hebt het maximum van {MAX_LIJSTJES} lijstjes.</p>
@@ -303,6 +322,22 @@ export default function Lists({
             onCancel={() => setConfirmDelete(null)}
             onConfirm={() => remove(confirmDelete.id)}
           />
+        )}
+        {mic.listening ? (
+          <section className="voice" aria-live="polite">
+            <p>
+              <strong>Luisteren…</strong> Zeg de naam van het nieuwe lijstje
+            </p>
+          </section>
+        ) : (
+          notice && (
+            <section className={notice.kind === 'error' ? 'voice error' : 'voice'} aria-live="polite">
+              <p role="status">{notice.text}</p>
+              <button type="button" className="voice-close" aria-label="Melding sluiten" onClick={onCloseNotice}>
+                <X size={18} strokeWidth={1.75} aria-hidden />
+              </button>
+            </section>
+          )
         )}
         {error && (
           // Net als de meldingen op een lijstje (F5): onderaan, wit met een streep links.

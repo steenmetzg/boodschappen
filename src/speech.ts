@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MAX_TEKST } from './lists'
+import { MAX_NAAM, MAX_TEKST } from './lists'
 
 // Inspreken (F15): met de microfoonknop zeg je bijvoorbeeld "melk komma brood komma twee pakken koffie".
 // Alles van de spraakbediening staat in dit bestand, zodat het makkelijk weer weg kan.
@@ -60,7 +60,7 @@ const ERRORS: Record<string, string> = {
 
 export const SPEECH_KEY = 'lijstjes-spraak-aan'
 
-/** Staat de microfoonknop aan in de instellingen (F30)? Standaard wel. */
+/** Staat de microfoonknop aan in de instellingen (F16)? Standaard wel. */
 export function loadSpeechEnabled(): boolean {
   try {
     return localStorage.getItem(SPEECH_KEY) !== 'nee'
@@ -76,6 +76,15 @@ export function saveSpeechEnabled(on: boolean): void {
   } catch {
     // Opslag niet beschikbaar; de instelling geldt dan alleen zolang de app open is.
   }
+}
+
+/**
+ * De naam van een ingesproken nieuw lijstje (F31): de hele zin, niet opgesplitst bij "komma", zonder punt
+ * aan het eind en met een hoofdletter, zoals "Verjaardag Anne".
+ */
+export function spokenName(alternatives: string[]): string {
+  const text = (alternatives[0] ?? '').trim().replace(/[.!?]+$/, '').trim()
+  return (text.charAt(0).toLocaleUpperCase('nl') + text.slice(1)).slice(0, MAX_NAAM).trim()
 }
 
 /**

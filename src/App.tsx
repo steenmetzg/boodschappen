@@ -9,7 +9,9 @@ import {
   editItem,
   loadCurrent,
   loadLijstjes,
+  MAX_LIJSTJES,
   move,
+  nameError,
   moveItem,
   newId,
   saveCurrent,
@@ -18,7 +20,7 @@ import {
   type Lijstje,
 } from './lists'
 import Settings from './Settings'
-import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, useSpeech } from './speech'
+import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, spokenName, useSpeech } from './speech'
 
 // Zo lang blijft een melding onderaan het lijstje staan, in milliseconden.
 const NOTICE_MS = 5000
@@ -33,7 +35,8 @@ export default function App() {
   const [speechEnabled, setSpeechEnabled] = useState(loadSpeechEnabled)
   const installPrompt = useInstallPrompt()
   const speech = useSpeech(
-    (alternatives) => addTexts(bestSpoken(alternatives), true),
+    // Op Mijn lijstjes is wat je zegt de naam van een nieuw lijstje (F31), op een lijstje zijn het items (F15).
+    (alternatives) => (screen === 'lijstjes' ? createSpoken(spokenName(alternatives)) : addTexts(bestSpoken(alternatives), true)),
     (text) => setNotice({ kind: 'error', text }),
   )
   const lijstje = lijstjes.find((l) => l.id === huidig) ?? lijstjes[0]
@@ -75,6 +78,13 @@ export default function App() {
     const id = newId()
     setLijstjes((all) => [...all, { id, naam, items: [] }])
     openList(id)
+  }
+
+  /** Maakt een lijstje met de ingesproken naam, of meldt waarom dat niet kan (F31). */
+  function createSpoken(naam: string) {
+    const problem = lijstjes.length >= MAX_LIJSTJES ? `Je hebt het maximum van ${MAX_LIJSTJES} lijstjes.` : nameError(lijstjes, naam)
+    if (problem) setNotice({ kind: 'error', text: naam ? problem : 'Ik verstond geen naam. Probeer het opnieuw.' })
+    else create(naam)
   }
 
   function remove(id: string): Deleted | null {
@@ -130,6 +140,17 @@ export default function App() {
         onOpenInfo={() => setScreen('info')}
         onOpenSettings={() => setScreen('settings')}
         install={installPrompt}
+        notice={notice}
+        onCloseNotice={() => setNotice(null)}
+      mic={{
+        show: speechEnabled && speechSupported(),
+        listening: speech.listening,
+        start: () => {
+          setNotice(null)
+          speech.start()
+        },
+        stop: speech.stop,
+      }}
       />
     )
   }

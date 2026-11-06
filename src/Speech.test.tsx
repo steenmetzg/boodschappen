@@ -2,8 +2,8 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { bestSpoken, SPEECH_KEY, splitSpoken } from './speech'
-import { itemTexts, rememberFirstList, typeItem } from './test/helpers'
+import { bestSpoken, SPEECH_KEY, splitSpoken, spokenName } from './speech'
+import { itemTexts, list, rememberFirstList, storeLists, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
@@ -144,5 +144,42 @@ describe('AC14: microfoon aan en uit', () => {
     delete win.webkitSpeechRecognition
     render(<App />)
     expect(screen.queryByRole('button', { name: 'Inspreken' })).not.toBeInTheDocument()
+  })
+})
+
+describe('AC24: naam van een nieuw lijstje inspreken', () => {
+  it('maakt van de hele zin één naam met een hoofdletter, zonder te splitsen bij "komma"', () => {
+    expect(spokenName(['verjaardag Anne komma zaterdag.'])).toBe('Verjaardag Anne komma zaterdag')
+    expect(spokenName(['Jan en Piet', 'jan komma piet'])).toBe('Jan en Piet')
+    expect(spokenName(['a'.repeat(40)])).toHaveLength(30)
+  })
+
+  it('maakt op Mijn lijstjes een nieuw lijstje met de ingesproken naam en opent het', async () => {
+    const user = userEvent.setup()
+    localStorage.clear()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Naam inspreken' }))
+    expect(screen.getByText(/Zeg de naam van het nieuwe lijstje/)).toBeInTheDocument()
+    FakeRecognition.last!.hear('verjaardag Anne')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Verjaardag Anne')
+    expect(itemTexts()).toEqual([])
+  })
+
+  it('meldt het als er al een lijstje met die naam is', async () => {
+    const user = userEvent.setup()
+    localStorage.clear()
+    storeLists([list('a', 'AH')])
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Naam inspreken' }))
+    FakeRecognition.last!.hear('ah')
+    expect(screen.getByRole('status')).toHaveTextContent('Er is al een lijstje AH.')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mijn lijstjes')
+  })
+
+  it('heeft geen microfoonknop als de microfoon in de instellingen uit staat', () => {
+    localStorage.clear()
+    localStorage.setItem(SPEECH_KEY, 'nee')
+    render(<App />)
+    expect(screen.queryByRole('button', { name: 'Naam inspreken' })).not.toBeInTheDocument()
   })
 })
