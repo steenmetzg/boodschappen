@@ -26,6 +26,12 @@ describe('AC19: past op een telefoon', () => {
     expect(rule('.app.list-screen,\n.app.lists-screen')).toContain('min-height: 100dvh;')
   })
 
+  it('houdt de titelbalk van een lijstje bovenaan in beeld; alleen de items scrollen', () => {
+    expect(rule('.list-header')).toContain('position: sticky;')
+    expect(rule('.list-header')).toContain('top: 0;')
+    expect(rule('.list-header')).toContain('background: var(--bg);')
+  })
+
   it('heeft aanraakgebieden van minstens 44 pixels voor afvinken, aanpassen en weggooien', () => {
     expect(rule('.item-check')).toContain('width: 44px;')
     expect(rule('.item-check')).toContain('height: 48px;')

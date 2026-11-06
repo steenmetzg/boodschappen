@@ -393,7 +393,14 @@ h2 {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  /* De titelbalk blijft bovenaan staan; alleen de items scrollen eronder door. */
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  /* Over de hele breedte, zodat de schaduw van het lijstje er niet langs piept. */
+  margin: calc(-1 * max(16px, env(safe-area-inset-top))) -16px 0;
+  padding: max(16px, env(safe-area-inset-top)) 16px 12px;
+  background: var(--bg);
 }
 
 .list-header h1 {
@@ -551,13 +558,16 @@ h2 {
 /* Bovenaan het scherm: de bovenrand van het lijstje, met het lipje naar boven. */
 .more-items.above {
   position: fixed;
-  z-index: 3;
-  top: 0;
+  /* Boven de titelbalk, zodat het lipje dicht onder de titel kan staan. */
+  z-index: 5;
+  /* top: net onder de titel in de vaste titelbalk, ingesteld vanuit ListView. */
   left: 50%;
   width: min(calc(100vw - 32px), 448px);
-  height: calc(20px + env(safe-area-inset-top, 0px));
+  height: 20px;
   border-bottom: 1px solid var(--line);
   background: var(--bg);
+  /* Bedekt ook de schaduw langs de zijkanten van het lijstje. */
+  box-shadow: -4px 0 0 var(--bg), 4px 0 0 var(--bg);
   transform: translateX(-50%);
 }
 
@@ -581,9 +591,9 @@ h2 {
   border-radius: 0 0 8px 8px;
 }
 
-/* Ruimte voor het lipje boven het tekstveld. */
+/* Ruimte voor het lipje boven het tekstveld; de lijn met het lipje staat zo wat hoger boven het tekstveld. */
 .add-row.covering {
-  padding-top: 18px;
+  padding-top: 26px;
 }
 
 .add-row .item-check .check {
