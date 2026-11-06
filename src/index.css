@@ -203,6 +203,8 @@ h2 {
 .bottom {
   position: sticky;
   bottom: 0;
+  /* Boven de items die onder de vaste invoerregel doorschuiven (F29). */
+  z-index: 3;
   display: grid;
   gap: 8px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -418,7 +420,8 @@ h2 {
   border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  /* clip in plaats van hidden, zodat de invoerregel onderaan in beeld kan blijven staan (sticky). */
+  overflow: clip;
 }
 
 .item {
@@ -509,7 +512,47 @@ h2 {
 
 /* De invoerregel onderaan het lijstje: een rondje dat (nog) niet werkt (F3). */
 .add-row {
+  /* Bij een lang lijstje blijft de invoerregel onderaan in beeld, boven de meldingen (F3). */
+  position: sticky;
+  z-index: 2;
   padding-right: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+/* Staan er items onder de invoerregel, dan een schaduw erboven (F29). */
+.add-row.covering {
+  border-top-color: transparent;
+  box-shadow: 0 -6px 12px -6px rgba(16, 24, 40, 0.18);
+}
+
+/* Pijltje met het aantal items boven of onder het scherm (F29). */
+.more-items {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px 6px 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-accent);
+  white-space: nowrap;
+}
+
+.more-items.above {
+  position: fixed;
+  z-index: 3;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.more-items.below {
+  position: absolute;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .add-row .item-check .check {

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -7,8 +8,9 @@ import {
   type PointerEvent,
   type TouchEvent,
 } from 'react'
-import { ArrowLeft, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, ChevronUp, GripVertical, Mic, Trash2, X } from 'lucide-react'
 import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { countHidden, type Hidden } from './visibility'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
 const SWIPE_DELETE = 80
@@ -191,8 +193,13 @@ export default function ListView({
   const [drag, setDrag] = useState<Drag | null>(null)
   // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
   const [moved, setMoved] = useState<string | null>(null)
+  const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
+  // Hoe hoog de meldingen onderaan zijn: daarboven blijft de invoerregel staan (F3).
+  const [bottomHeight, setBottomHeight] = useState(0)
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
+  const addRow = useRef<HTMLLIElement>(null)
+  const bottom = useRef<HTMLDivElement>(null)
   const items = lijstje.items
   const hasDone = items.some((i) => i.af)
 
@@ -200,6 +207,33 @@ export default function ListView({
     if (!moved) return
     list.current?.querySelector<HTMLElement>(`li[data-id="${moved}"] .item-grip`)?.focus()
   }, [moved, items])
+
+  /** Kijkt welke items buiten beeld staan, na elke wijziging, bij scrollen en als het scherm verandert (F29). */
+  function measure() {
+    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
+    const rects = Array.from(rows, (row) => row.getBoundingClientRect())
+    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
+    const next = countHidden(rects, 0, limit)
+    setHidden((prev) => (prev.above === next.above && prev.below === next.below ? prev : next))
+    setBottomHeight(bottom.current?.offsetHeight ?? 0)
+  }
+
+  useLayoutEffect(measure)
+
+  useEffect(() => {
+    window.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
+    }
+  })
+
+  /** Schuift het lijstje een flink stuk omhoog of omlaag, naar de items buiten beeld (F29). */
+  function scrollPage(direction: 1 | -1) {
+    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
+    window.scrollBy({ top: direction * Math.max(100, limit - 120), behavior: 'smooth' })
+  }
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -297,6 +331,13 @@ export default function ListView({
         </section>
       )}
 
+      {hidden.above > 0 && (
+        <button type="button" className="more-items above" onClick={() => scrollPage(-1)}>
+          <ChevronUp size={16} strokeWidth={2} aria-hidden />
+          {hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
+        </button>
+      )}
+
       <ul ref={list} className="items" aria-label={`Items op ${lijstje.naam}`}>
         {items.map((item, index) => (
           <ItemRow
@@ -311,7 +352,17 @@ export default function ListView({
           />
         ))}
         {/* De invoerregel staat als laatste regel in het lijstje (F3, F15). */}
-        <li className="item add-row">
+        <li
+          ref={addRow}
+          className={hidden.below > 0 ? 'item add-row covering' : 'item add-row'}
+          style={{ bottom: bottomHeight }}
+        >
+          {hidden.below > 0 && (
+            <button type="button" className="more-items below" onClick={() => scrollPage(1)}>
+              <ChevronDown size={16} strokeWidth={2} aria-hidden />
+              {hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
+            </button>
+          )}
           <span className="item-grip" aria-hidden />
           <span className="item-check" aria-hidden>
             <span className="check" />
@@ -343,7 +394,7 @@ export default function ListView({
         </li>
       </ul>
 
-      <div className="bottom">
+      <div ref={bottom} className="bottom">
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>

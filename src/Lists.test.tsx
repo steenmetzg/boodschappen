@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { CURRENT_KEY, dropIndex, LISTS_KEY } from './lists'
 import { itemButton, itemTexts, list, rememberFirstList, storeLists, typeItem } from './test/helpers'
+import { countHidden } from './visibility'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
@@ -17,6 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 function title() {
@@ -517,5 +519,43 @@ describe('AC21: items verplaatsen', () => {
     expect(itemButton('kaas')).toHaveAttribute('aria-pressed', 'true')
     await user.keyboard('{ArrowDown}')
     expect(itemTexts()).toEqual(['melk', 'kaas', 'brood'])
+  })
+})
+
+describe('AC22: items buiten beeld', () => {
+  it('telt de items boven het scherm en onder de invoerregel', () => {
+    const rows = [0, 1, 2, 3, 4].map((i) => ({ top: i * 50 - 60, bottom: i * 50 - 10 }))
+    // Midden van de regels: -35, 15, 65, 115, 165; in beeld van 0 tot 120.
+    expect(countHidden(rows, 0, 120)).toEqual({ above: 1, below: 1 })
+    expect(countHidden(rows, -100, 1000)).toEqual({ above: 0, below: 0 })
+  })
+
+  it('toont een pijltje met het aantal items boven en onder het scherm, en scrolt erheen', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'a, b, c, d, e, f')
+    // Nagebootst scherm: regels van 50 pixels, 2 items boven het scherm, de invoerregel op 150 pixels.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 150, bottom: 200 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      return { top: i * 50 - 100, bottom: i * 50 - 50, height: 50 } as DOMRect
+    })
+    const scrollBy = vi.fn()
+    window.scrollBy = scrollBy
+    fireEvent.scroll(window)
+    expect(screen.getByRole('button', { name: '2 items hoger' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '1 item lager' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '1 item lager' }))
+    expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: expect.any(Number) }))
+    expect(scrollBy.mock.calls[0][0].top).toBeGreaterThan(0)
+    vi.restoreAllMocks()
+  })
+
+  it('toont geen pijltjes als alles in beeld is', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
   })
 })
