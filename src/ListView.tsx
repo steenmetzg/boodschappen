@@ -9,7 +9,7 @@ import {
   type TouchEvent,
 } from 'react'
 import { ArrowLeft, Check, ChevronDown, ChevronUp, GripVertical, Mic, Trash2, X } from 'lucide-react'
-import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { dropIndex, limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { countHidden, type Hidden } from './visibility'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
@@ -389,9 +389,9 @@ export default function ListView({
               placeholder="Item toevoegen"
               enterKeyHint="enter"
               autoComplete="off"
-              maxLength={MAX_TEKST * 10}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              // Elk item mag maximaal 60 tekens hebben, ook als je er meerdere met komma's typt (F3, F4).
+              onChange={(e) => setText(limitTyped(e.target.value))}
             />
             {mic.show && (
               <button

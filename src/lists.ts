@@ -62,6 +62,20 @@ export function splitTyped(text: string): string[] {
     .filter((t) => t.length > 0)
 }
 
+/**
+ * Houdt elk item in het tekstveld op maximaal MAX_TEKST tekens (F3, F4): de tekens tussen twee komma's,
+ * zonder de spaties aan het begin. Wat je meer typt of plakt, valt weg.
+ */
+export function limitTyped(text: string): string {
+  return text
+    .split(',')
+    .map((part) => {
+      const lead = part.length - part.trimStart().length
+      return part.slice(0, lead + MAX_TEKST)
+    })
+    .join(',')
+}
+
 export interface AddResult {
   lijstje: Lijstje
   /** Nieuw op het lijstje gezet. */

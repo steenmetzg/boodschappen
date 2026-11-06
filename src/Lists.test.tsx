@@ -72,6 +72,18 @@ describe('AC3: meerdere items tegelijk typen', () => {
     await typeItem(user, 'melk, brood, kaas')
     expect(itemTexts()).toEqual(['melk', 'brood', 'kaas'])
   })
+  it('laat per item niet meer dan 60 tekens typen of plakken, ook na een komma', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const field = screen.getByRole('textbox', { name: 'Item toevoegen' })
+    await user.type(field, 'a'.repeat(65))
+    expect(field).toHaveValue('a'.repeat(60))
+    await user.type(field, ', ')
+    await user.paste('b'.repeat(70))
+    expect(field).toHaveValue(`${'a'.repeat(60)}, ${'b'.repeat(60)}`)
+    await user.keyboard('{Enter}')
+    expect(itemTexts()).toEqual(['a'.repeat(60), 'b'.repeat(60)])
+  })
 })
 
 describe('AC4: dubbel item', () => {
