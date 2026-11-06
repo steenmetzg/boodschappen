@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { MAX_TEKST } from './lists'
 
-// Inspreken (F15): met de microfoonknop zeg je bijvoorbeeld "melk, brood en twee pakken koffie".
+// Inspreken (F15): met de microfoonknop zeg je bijvoorbeeld "melk komma brood komma twee pakken koffie".
 // Alles van de spraakbediening staat in dit bestand, zodat het makkelijk weer weg kan.
 // Het luisteren zelf (useSpeech) komt uit WoonWerk.
 
-/** Een ingesproken zin wordt opgesplitst bij "en", "komma" en komma's; de eerste letter wordt een kleine letter. */
+/**
+ * Een ingesproken zin wordt opgesplitst bij het woord "komma" en bij komma's, niet bij "en", zodat
+ * "Jan en Piet ophalen" één item blijft; de eerste letter wordt een kleine letter.
+ */
 export function splitSpoken(text: string): string[] {
   return text
-    .split(/,|\s+(?:en|komma)\s+/i)
+    .split(/,|\s+komma\s+/i)
     .map((t) => t.replace(/[.!?]+$/, '').trim())
-    .map((t) => t.replace(/^(?:en|komma)\s+/i, '').replace(/\s+(?:en|komma)$/i, '').trim())
-    .filter((t) => t.length > 0 && !/^(en|komma)$/i.test(t))
+    .map((t) => t.replace(/^komma\s+/i, '').replace(/\s+komma$/i, '').trim())
+    .filter((t) => t.length > 0 && !/^komma$/i.test(t))
     .map((t) => (t.charAt(0).toLocaleLowerCase('nl') + t.slice(1)).slice(0, MAX_TEKST).trim())
 }
 

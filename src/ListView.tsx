@@ -9,7 +9,7 @@ import {
   type TouchEvent,
 } from 'react'
 import { ArrowLeft, Check, ChevronDown, ChevronUp, GripVertical, Mic, Trash2, X } from 'lucide-react'
-import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { dropIndex, limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { countHidden, type Hidden } from './visibility'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
@@ -213,12 +213,29 @@ export default function ListView({
     const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
     const rects = Array.from(rows, (row) => row.getBoundingClientRect())
     const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
-    const next = countHidden(rects, 0, limit)
+    // Staat de grijze lijn met het lipje bovenaan in beeld, dan telt alles daarachter als buiten beeld.
+    const top = document.querySelector('.more-items.above')?.getBoundingClientRect().bottom ?? 0
+    const next = countHidden(rects, top, limit)
     setHidden((prev) => (prev.above === next.above && prev.below === next.below ? prev : next))
     setBottomHeight(bottom.current?.offsetHeight ?? 0)
   }
 
   useLayoutEffect(measure)
+
+  // Komen er items bij (getypt of ingesproken), dan schuift het lijstje omhoog tot het laatste item
+  // net boven de invoerregel in beeld staat (F3, F29).
+  const count = useRef(items.length)
+  useLayoutEffect(() => {
+    const added = items.length > count.current
+    count.current = items.length
+    if (!added) return
+    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]')
+    const last = rows?.[rows.length - 1]
+    const limit = addRow.current?.getBoundingClientRect().top
+    if (!last || limit === undefined) return
+    const overlap = last.getBoundingClientRect().bottom - limit
+    if (overlap > 0) window.scrollBy({ top: overlap })
+  }, [items.length])
 
   useEffect(() => {
     window.addEventListener('scroll', measure, { passive: true })
@@ -239,9 +256,8 @@ export default function ListView({
     e.preventDefault()
     if (text.trim()) onAdd(text)
     setText('')
-    // Het veld blijft geselecteerd en in beeld, zodat je meteen het volgende item typt (F3).
+    // Het veld blijft geselecteerd, zodat je meteen het volgende item typt (F3).
     input.current?.focus()
-    requestAnimationFrame(() => input.current?.scrollIntoView?.({ block: 'nearest' }))
   }
 
   function clear(which: 'af' | 'alles') {
@@ -389,9 +405,9 @@ export default function ListView({
               placeholder="Item toevoegen"
               enterKeyHint="enter"
               autoComplete="off"
-              maxLength={MAX_TEKST * 10}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              // Elk item mag maximaal 60 tekens hebben, ook als je er meerdere met komma's typt (F3, F4).
+              onChange={(e) => setText(limitTyped(e.target.value))}
             />
             {mic.show && (
               <button
@@ -412,7 +428,7 @@ export default function ListView({
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>
-              <strong>Luisteren…</strong> Zeg bijvoorbeeld: melk, brood en twee pakken koffie
+              <strong>Luisteren…</strong> Zeg bijvoorbeeld: melk komma brood komma twee pakken koffie
             </p>
           </section>
         ) : (
