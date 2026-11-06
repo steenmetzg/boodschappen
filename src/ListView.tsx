@@ -196,6 +196,9 @@ export default function ListView({
   const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
   // Hoe hoog de meldingen onderaan zijn: daarboven blijft de invoerregel staan (F3).
   const [bottomHeight, setBottomHeight] = useState(0)
+  // Hoe hoog de vaste titelbalk is: daaronder staat de lijn met het lipje voor items erboven (F29).
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const header = useRef<HTMLElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
   const addRow = useRef<HTMLLIElement>(null)
@@ -214,10 +217,14 @@ export default function ListView({
     const rects = Array.from(rows, (row) => row.getBoundingClientRect())
     const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
     // Staat de grijze lijn met het lipje bovenaan in beeld, dan telt alles daarachter als buiten beeld.
-    const top = document.querySelector('.more-items.above')?.getBoundingClientRect().bottom ?? 0
+    const top =
+      document.querySelector('.more-items.above')?.getBoundingClientRect().bottom ??
+      header.current?.getBoundingClientRect().bottom ??
+      0
     const next = countHidden(rects, top, limit)
     setHidden((prev) => (prev.above === next.above && prev.below === next.below ? prev : next))
     setBottomHeight(bottom.current?.offsetHeight ?? 0)
+    setHeaderHeight(header.current?.offsetHeight ?? 0)
   }
 
   useLayoutEffect(measure)
@@ -311,7 +318,7 @@ export default function ListView({
 
   return (
     <main className="app list-screen">
-      <header className="list-header">
+      <header ref={header} className="list-header">
         <button type="button" className="back-button" aria-label="Terug naar Mijn lijstjes" onClick={onBack}>
           <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
         </button>
@@ -349,7 +356,7 @@ export default function ListView({
 
       {hidden.above > 0 && (
         // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
-        <div className="more-items above">
+        <div className="more-items above" style={{ top: headerHeight }}>
           <button
             type="button"
             aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
