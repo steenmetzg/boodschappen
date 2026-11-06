@@ -271,6 +271,16 @@ describe('AC8: lijstje maken', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Er is al een lijstje AH.')
     expect(listNames()).toEqual(['AH', 'Klussen'])
   })
+
+  it('heeft geen maximum aan het aantal lijstjes', async () => {
+    const user = userEvent.setup()
+    storeLists(Array.from({ length: 30 }, (_, i) => list(`l${i}`, `Lijstje ${i}`)))
+    render(<App />)
+    await openMyLists(user)
+    await user.type(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }), 'Nummer 31{Enter}')
+    expect(title()).toHaveTextContent('Nummer 31')
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)).toHaveLength(31)
+  })
 })
 
 describe('AC9: naam wijzigen', () => {

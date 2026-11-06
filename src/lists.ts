@@ -19,7 +19,6 @@ export const CURRENT_KEY = 'lijstjes-huidig'
 
 export const MAX_NAAM = 30
 export const MAX_TEKST = 60
-export const MAX_LIJSTJES = 20
 
 /** Een nieuwe installatie begint met één leeg lijstje (F13). */
 export const DEFAULT_LIJSTJES: Lijstje[] = [{ id: 'l1', naam: 'Mijn 1e lijstje', items: [] }]

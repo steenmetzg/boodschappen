@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import type { Notice } from './ListView'
-import { itemsText, MAX_LIJSTJES, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
+import { itemsText, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
 
@@ -279,37 +279,33 @@ export default function Lists({
         >
           <MoreBelow count={hidden.below} words={['lijstje', 'lijstjes']} onClick={() => scroll.scrollPage(1)} />
           <span className="item-grip" aria-hidden />
-          {lijstjes.length < MAX_LIJSTJES ? (
-            <form className="add-item" onSubmit={create}>
-              <input
-                type="text"
-                aria-label="Naam van het nieuwe lijstje"
-                placeholder="Nieuw lijstje"
-                enterKeyHint="go"
-                autoComplete="off"
-                maxLength={MAX_NAAM}
-                value={naam}
-                onChange={(e) => {
-                  setNaam(e.target.value)
-                  setError(null)
-                }}
-              />
-              {mic.show && (
-                // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
-                <button
-                  type="button"
-                  className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
-                  aria-label={mic.listening ? 'Stoppen met luisteren' : 'Naam inspreken'}
-                  aria-pressed={mic.listening}
-                  onClick={mic.listening ? mic.stop : mic.start}
-                >
-                  <Mic size={16} strokeWidth={2} aria-hidden />
-                </button>
-              )}
-            </form>
-          ) : (
-            <p className="muted max-lists">Je hebt het maximum van {MAX_LIJSTJES} lijstjes.</p>
-          )}
+          <form className="add-item" onSubmit={create}>
+            <input
+              type="text"
+              aria-label="Naam van het nieuwe lijstje"
+              placeholder="Nieuw lijstje"
+              enterKeyHint="go"
+              autoComplete="off"
+              maxLength={MAX_NAAM}
+              value={naam}
+              onChange={(e) => {
+                setNaam(e.target.value)
+                setError(null)
+              }}
+            />
+            {mic.show && (
+              // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
+              <button
+                type="button"
+                className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
+                aria-label={mic.listening ? 'Stoppen met luisteren' : 'Naam inspreken'}
+                aria-pressed={mic.listening}
+                onClick={mic.listening ? mic.stop : mic.start}
+              >
+                <Mic size={16} strokeWidth={2} aria-hidden />
+              </button>
+            )}
+          </form>
         </li>
       </ul>
 

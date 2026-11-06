@@ -733,13 +733,6 @@ h2 {
   margin-left: 4px;
 }
 
-/* Kan er geen lijstje meer bij, dan staat dat op de plek van het tekstveld (F10). */
-.max-lists {
-  flex: 1;
-  margin: 0;
-  padding: 12px 8px;
-}
-
 .list-name {
   flex: 1;
   min-width: 0;

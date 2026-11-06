@@ -9,7 +9,6 @@ import {
   editItem,
   loadCurrent,
   loadLijstjes,
-  MAX_LIJSTJES,
   move,
   nameError,
   moveItem,
@@ -82,7 +81,7 @@ export default function App() {
 
   /** Maakt een lijstje met de ingesproken naam, of meldt waarom dat niet kan (F31). */
   function createSpoken(naam: string) {
-    const problem = lijstjes.length >= MAX_LIJSTJES ? `Je hebt het maximum van ${MAX_LIJSTJES} lijstjes.` : nameError(lijstjes, naam)
+    const problem = nameError(lijstjes, naam)
     if (problem) setNotice({ kind: 'error', text: naam ? problem : 'Ik verstond geen naam. Probeer het opnieuw.' })
     else create(naam)
   }
