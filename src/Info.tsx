@@ -19,19 +19,19 @@ export default function Info({ onClose }: Props) {
       <section className="setting info">
         <h2>Wat doet Lijstjes?</h2>
         <p>
-          Met Lijstjes maak je snel lijstjes: boodschappen, klusjes, dingen om in te pakken of wat je maar wilt. Een nieuw
-          item typ je op de onderste regel van het lijstje. Met een tik op het rondje vink je een item af; het blijft dan
-          doorgestreept staan. Tik op de tekst om hem aan te passen, en met het kruisje gooi je een item weg. Pak een item
-          vast aan de puntjes links om het hoger of lager te zetten.
+          Lijstjes is een eenvoudige app voor al je lijstjes: boodschappen, klusjes, dingen om in te pakken of wat je
+          maar wilt. Je zet items snel op een lijstje, vinkt ze af als ze klaar zijn en past ze aan of gooit ze weg. Een
+          afgevinkt item blijft doorgestreept op zijn plek staan. De volgorde van de items bepaal je zelf. Lijstjes werkt
+          ook zonder internet en bewaart alles op je telefoon.
         </p>
       </section>
 
       <section className="setting info">
         <h2>Lijstjes</h2>
         <p>
-          Op Mijn lijstjes maak je zoveel lijstjes als je wilt, elk met een eigen naam, en geef je ze een andere naam of
-          gooi je ze weg. Tik op een lijstje om het te openen. De app start altijd met het lijstje dat je het laatst
-          gebruikte.
+          Je kunt zoveel lijstjes bijhouden als je wilt, elk met een eigen naam. Lijstjes onthoudt welk lijstje je het
+          laatst gebruikte en opent dat meteen. Met een backup bewaar je al je lijstjes in een bestand en zet je ze terug,
+          ook op een andere telefoon.
         </p>
       </section>
 
@@ -39,8 +39,9 @@ export default function Info({ onClose }: Props) {
         <section className="setting info">
           <h2>Inspreken</h2>
           <p>
-            Met de microfoon spreek je items in, ook meerdere tegelijk door "komma" te zeggen: "melk komma brood komma twee pakken koffie". Het woordje "en" splitst niet, dus "Jan en Piet ophalen" blijft één item. Inspreken
-            werkt alleen met internet.
+            Je kunt items ook inspreken, meerdere tegelijk. Lijstjes maakt van alles tussen het woord "komma" een apart
+            item, dus "melk komma brood komma twee pakken koffie" wordt drie items. Het woordje "en" splitst niet, dus
+            "Jan en Piet ophalen van Schiphol" blijft één item. Inspreken werkt alleen met internet.
           </p>
         </section>
       )}
