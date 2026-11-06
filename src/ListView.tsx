@@ -17,6 +17,9 @@ const SWIPE_DELETE = 80
 // Pas na zoveel pixels beslissen we of de vinger horizontaal (vegen) of verticaal (scrollen) beweegt.
 const SWIPE_LOCK = 10
 
+// Zoveel pixels schuift de lijn met het lipje voor items erboven over de ruimte onder de titel (F29).
+const ABOVE_OVERLAP = 10
+
 export type Notice = { kind: 'ok' | 'error'; text: string }
 
 interface Props {
@@ -356,7 +359,7 @@ export default function ListView({
 
       {hidden.above > 0 && (
         // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
-        <div className="more-items above" style={{ top: headerHeight }}>
+        <div className="more-items above" style={{ top: Math.max(0, headerHeight - ABOVE_OVERLAP) }}>
           <button
             type="button"
             aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}

@@ -558,8 +558,9 @@ h2 {
 /* Bovenaan het scherm: de bovenrand van het lijstje, met het lipje naar boven. */
 .more-items.above {
   position: fixed;
-  z-index: 3;
-  /* top: direct onder de vaste titelbalk, ingesteld vanuit ListView. */
+  /* Boven de titelbalk, zodat het lipje dicht onder de titel kan staan. */
+  z-index: 5;
+  /* top: net onder de titel in de vaste titelbalk, ingesteld vanuit ListView. */
   left: 50%;
   width: min(calc(100vw - 32px), 448px);
   height: 20px;
