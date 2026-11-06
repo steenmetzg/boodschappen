@@ -1,6 +1,6 @@
 # Specificatie: Lijstjes
 
-Status: **concept, ter goedkeuring door Greco**
+Status: **goedgekeurd door Greco op 6 november 2026**
 Versie: 1.0 (6 november 2026): eerste versie; items kun je afvinken (ze blijven doorgestreept op hun plek staan) en weggooien (zonder bevestiging of ongedaan maken), een heel lijstje weggooien kun je wel ongedaan maken (op verzoek van Greco), op basis van het plan "Plan Lijstjes PWA" en de werking en vormgeving van WoonWerk; de app heet Lijstjes (op verzoek van Greco, eerder "Boodschappen"; app-versie Lijstjes 1.0.0)
 
 ## 1. Doel

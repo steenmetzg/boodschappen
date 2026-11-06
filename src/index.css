@@ -1,0 +1,620 @@
+:root {
+  /* Lichtgrijze achtergrond met witte knoppen die met een smalle schaduw iets boven de pagina liggen. */
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --shadow: 0 1px 1.5px rgba(16, 24, 40, 0.12);
+  --shadow-accent: 0 1px 3px rgba(29, 78, 216, 0.35);
+  --text: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #1d4ed8;
+  --accent-soft: #eff4ff;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+
+h1 {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  justify-self: end;
+}
+
+.icon-button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+
+/* Aantal open items bij een lijstje op Mijn lijstjes (F9), zoals het label "vandaag" in WoonWerk. */
+.count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.modes {
+  display: grid;
+  /* Zoveel even brede kolommen als er knoppen aan staan. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 46px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 0.75rem;
+  transition: background-color 120ms ease, box-shadow 120ms ease, color 120ms ease;
+}
+
+.mode.selected {
+  background: linear-gradient(180deg, #2f5fe0, var(--accent));
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+/* Thuis in de instellingen: staat altijd aan en is niet te wijzigen. */
+.mode:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .mode:not(.selected):hover,
+  .icon-button:hover,
+  .wide-button:hover {
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.18);
+  }
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.back-button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center start;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  /* Het pijltje heeft links wat witruimte in het icoon; zo staat de lijn precies op de kolomrand. */
+  margin-left: -3.5px;
+  margin-right: 3.5px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.setting {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.setting:last-child {
+  border-bottom: none;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.muted {
+  margin: 0 0 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.backup-buttons {
+  display: grid;
+  gap: 8px;
+}
+
+.wide-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.message {
+  margin: 12px 0 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.message.error {
+  color: #b42318;
+}
+
+
+.bottom {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 8px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+
+
+.install {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.install p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.install button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.install .install-now {
+  background: var(--accent);
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+/* Herinnering om te declareren, boven de knoppen naar de overzichten. Tikken opent het overzicht.
+   Een dikke blauwe streep links en een blauwe titel laten hem opvallen. */
+
+.info p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+
+/* Versienummer onderaan de instellingen. */
+.version {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Spraakbediening (F29): de microfoonknop links in de balk onderaan, rond en gevuld blauw zodat hij opvalt. */
+
+.voice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 6px 12px;
+  border-left: 5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.15);
+  font-size: 0.875rem;
+  line-height: 1.3;
+  min-height: 56px;
+}
+
+.voice.error {
+  border-left-color: #b42318;
+}
+
+.voice p {
+  flex: 1;
+  margin: 0;
+}
+
+.voice strong {
+  color: var(--accent);
+}
+
+.voice button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.voice .voice-close {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  box-shadow: none;
+  color: var(--muted);
+}
+
+/* Eén knop in de instellingen (Spraak), even breed als in WoonWerk. */
+.modes.single {
+  grid-auto-columns: calc((100% - 24px) / 5);
+}
+
+/* Bevestigingen en keuzes in de app zelf (wit, blauwe streep links), zoals in WoonWerk. */
+.confirm {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 12px 10px 12px;
+  border-left: 5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.15);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.confirm strong {
+  color: var(--accent);
+}
+
+.confirm p {
+  margin: 0;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.confirm-buttons button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.confirm-buttons .confirm-yes {
+  background: var(--accent);
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+/* ---- Lijstjes ---- */
+
+.app.list-screen,
+.app.lists-screen {
+  /* Het tekstveld staat altijd onderaan het scherm, ook als het lijstje kort is. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: 0;
+}
+
+.app.list-screen .bottom,
+.app.lists-screen .bottom {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+/* Titelbalk: links de knop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
+.list-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.list-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+  background: transparent;
+}
+
+.empty {
+  margin: 16px 0;
+}
+
+/* De items in één wit vlak met dunne lijnen ertussen (F1). */
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  transition: transform 150ms ease;
+  touch-action: pan-y;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 4px 6px 14px;
+  border: none;
+  text-align: left;
+}
+
+/* Het rondje om af te vinken (F6); afgevinkt blauw met een wit vinkje. */
+.check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #c4c9d2;
+  border-radius: 50%;
+  color: #ffffff;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.item.done .check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.item-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.item.done .item-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* Kruisje om weg te gooien (F7). */
+.item-delete {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  color: var(--muted);
+}
+
+/* Tekstveld met plusknop en microfoon, altijd onderaan in beeld (F3, F15). */
+.add-item {
+  /* Zonder min-width 0 duwt het tekstveld de microfoon buiten het scherm. */
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-item input,
+.name-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.add-item input:focus-visible,
+.name-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.add-item .add {
+  color: var(--accent);
+}
+
+/* De microfoon: rond en gevuld blauw, zoals in WoonWerk. */
+.add-item .mic {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+/* Tijdens het luisteren een witte knop met blauwe rand. */
+.add-item .mic.listening {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.clear-choice {
+  margin: 0 0 12px;
+}
+
+.clear-choice .confirm-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.clear-choice .confirm-buttons .cancel {
+  grid-column: 1 / -1;
+}
+
+.confirm-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Mijn lijstjes (F9 t/m F12). */
+.lists {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-row .icon-button {
+  color: var(--muted);
+}
+
+.list-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-left: 5px solid transparent;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+/* Het huidige lijstje heeft een blauwe streep links. */
+.list-row.current .list-open {
+  border-left-color: var(--accent);
+}
+
+.list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-row .name-form {
+  flex: 1;
+}
+
+.name-form {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.name-form .message {
+  margin-top: 4px;
+}
+
+.undo-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
+}
