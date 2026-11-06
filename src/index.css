@@ -591,9 +591,9 @@ h2 {
   border-radius: 0 0 8px 8px;
 }
 
-/* Ruimte voor het lipje boven het tekstveld. */
+/* Ruimte voor het lipje boven het tekstveld; de lijn met het lipje staat zo wat hoger boven het tekstveld. */
 .add-row.covering {
-  padding-top: 18px;
+  padding-top: 26px;
 }
 
 .add-row .item-check .check {
