@@ -1,17 +1,24 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { CURRENT_KEY, LISTS_KEY } from './lists'
-import { itemButton, itemTexts, list, storeLists, typeItem } from './test/helpers'
+import { CURRENT_KEY, dropIndex, LISTS_KEY } from './lists'
+import { itemButton, itemTexts, list, rememberFirstList, storeLists, typeItem } from './test/helpers'
+import { countHidden } from './visibility'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
   storeFolder: async () => {},
 }))
 
+// De meeste tests beginnen op het scherm van een lijstje, alsof de app al eerder gebruikt is.
+beforeEach(() => {
+  rememberFirstList()
+})
+
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 function title() {
@@ -19,11 +26,21 @@ function title() {
 }
 
 describe('AC1: eerste keer openen', () => {
-  it('toont één leeg lijstje "Mijn 1e lijstje" met de grijze tekst', () => {
+  it('start met Mijn lijstjes met één leeg lijstje "Mijn 1e lijstje"', async () => {
+    localStorage.clear()
+    const user = userEvent.setup()
     render(<App />)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    expect(screen.queryByRole('button', { name: /Terug/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Informatie' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Instellingen en backup' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mijn 1e lijstje' }))
     expect(title()).toHaveTextContent('Mijn 1e lijstje')
-    expect(screen.getByText('Nog niets op dit lijstje. Typ of spreek hieronder een item in.')).toBeInTheDocument()
     expect(itemTexts()).toEqual([])
+    // Een leeg lijstje heeft alleen de invoerregel.
+    const rows = within(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' })).getAllByRole('listitem')
+    expect(rows).toHaveLength(1)
+    expect(within(rows[0]).getByRole('textbox', { name: 'Item toevoegen' })).toBeInTheDocument()
   })
 })
 
@@ -39,14 +56,12 @@ describe('AC2: item typen', () => {
     expect(field).toHaveFocus()
   })
 
-  it('werkt ook met de plusknop, en een leeg veld doet niets', async () => {
+  it('heeft geen plusknop, en Enter in een leeg veld doet niets', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('button', { name: 'Toevoegen' }))
+    expect(screen.queryByRole('button', { name: 'Toevoegen' })).not.toBeInTheDocument()
+    await typeItem(user, '   ')
     expect(itemTexts()).toEqual([])
-    await user.type(screen.getByRole('textbox', { name: 'Item toevoegen' }), 'kaas')
-    await user.click(screen.getByRole('button', { name: 'Toevoegen' }))
-    expect(itemTexts()).toEqual(['kaas'])
   })
 })
 
@@ -200,7 +215,7 @@ describe('AC7: lijstje leegmaken', () => {
 })
 
 async function openMyLists(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Mijn lijstjes' }))
+  await user.click(screen.getByRole('button', { name: 'Terug naar Mijn lijstjes' }))
 }
 
 describe('AC8: lijstje maken', () => {
@@ -252,26 +267,50 @@ describe('AC9: naam wijzigen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Er is al een lijstje Klussen.')
     await user.clear(field)
     await user.type(field, 'Jumbo{Enter}')
-    expect(screen.getByRole('button', { name: 'Jumbo' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
+    await user.click(screen.getByRole('button', { name: 'Jumbo' }))
     expect(title()).toHaveTextContent('Jumbo')
   })
 })
 
 describe('AC10: lijstje weggooien', () => {
-  it('gooit zonder vraag weg en zet het met Ongedaan maken terug op dezelfde plek', async () => {
+  it('gooit een leeg lijstje zonder vraag weg', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    await user.click(screen.getByRole('button', { name: 'Lijstje Klussen weggooien' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Klussen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Lijstje Klussen weggegooid')
+  })
+
+  it('vraagt eerst om bevestiging als er items op staan; Annuleren laat het staan', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk', ['brood', true]]), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
+    const question = screen.getByRole('alertdialog', { name: 'Dit lijstje bevat items' })
+    expect(question).toHaveTextContent('AH heeft 2 items. Lijstje en items weggooien?')
+    await user.click(within(question).getByRole('button', { name: 'Annuleren' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'AH, 1 open' })).toBeInTheDocument()
+  })
+
+  it('gooit na bevestiging weg en zet het met Ongedaan maken terug op dezelfde plek', async () => {
     const user = userEvent.setup()
     storeLists([list('a', 'AH', ['melk', ['brood', true]]), list('b', 'Klussen'), list('c', 'Vakantie')], 'a')
     render(<App />)
     await openMyLists(user)
     await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Weggooien' }))
     expect(screen.queryByRole('button', { name: /^AH/ })).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Lijstje AH weggegooid')
     await user.click(screen.getByRole('button', { name: 'Ongedaan maken' }))
     const names = screen.getAllByRole('listitem').map((li) => li.querySelector('.list-name')?.textContent)
     expect(names).toEqual(['AH', 'Klussen', 'Vakantie'])
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
+    expect(screen.getByRole('button', { name: 'AH, 1 open' })).toHaveAttribute('aria-current', 'true')
+    await user.click(screen.getByRole('button', { name: 'AH, 1 open' }))
     expect(title()).toHaveTextContent('AH')
     expect(itemTexts()).toEqual(['melk', 'brood'])
     expect(itemButton('brood')).toHaveAttribute('aria-pressed', 'true')
@@ -283,8 +322,7 @@ describe('AC10: lijstje weggooien', () => {
     render(<App />)
     await openMyLists(user)
     await user.click(screen.getByRole('button', { name: 'Lijstje Klussen weggooien' }))
-    await user.click(screen.getByRole('button', { name: 'Terug' }))
-    expect(title()).toHaveTextContent('AH')
+    expect(screen.getByRole('button', { name: 'AH' })).toHaveAttribute('aria-current', 'true')
   })
 
   it('maakt het weggooien na 10 seconden definitief', async () => {
@@ -313,8 +351,8 @@ describe('AC10: lijstje weggooien', () => {
   })
 })
 
-describe('AC11: ander lijstje kiezen', () => {
-  it('toont het gekozen lijstje op het hoofdscherm, met het aantal open items erbij', async () => {
+describe('AC11: een lijstje openen vanaf Mijn lijstjes', () => {
+  it('opent het lijstje waarop je tikt, met het aantal open items erbij, en Terug gaat naar Mijn lijstjes', async () => {
     const user = userEvent.setup()
     storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen', ['lamp', ['kraan', true], 'deur'])], 'a')
     render(<App />)
@@ -325,6 +363,22 @@ describe('AC11: ander lijstje kiezen', () => {
     await user.click(screen.getByRole('button', { name: 'Klussen, 2 open' }))
     expect(title()).toHaveTextContent('Klussen')
     expect(itemTexts()).toEqual(['lamp', 'kraan', 'deur'])
+    await openMyLists(user)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    expect(screen.getByRole('button', { name: 'Klussen, 2 open' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('start na opnieuw openen met het laatst geopende lijstje', async () => {
+    const user = userEvent.setup()
+    localStorage.clear()
+    storeLists([list('a', 'AH'), list('b', 'Klussen')])
+    const { unmount } = render(<App />)
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    await user.click(screen.getByRole('button', { name: 'Klussen' }))
+    await openMyLists(user)
+    unmount()
+    render(<App />)
+    expect(title()).toHaveTextContent('Klussen')
   })
 })
 
@@ -350,5 +404,158 @@ describe('AC12: onthouden', () => {
     storeLists([list('a', 'AH'), list('b', 'Klussen')], 'weg')
     render(<App />)
     expect(title()).toHaveTextContent('AH')
+  })
+})
+
+describe('AC2: de invoerregel staat in het lijstje', () => {
+  it('is de laatste regel, met een rondje dat nog niet werkt, geen plusknop en de microfoon rechts', async () => {
+    const user = userEvent.setup()
+    ;(window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition = class {}
+    render(<App />)
+    await typeItem(user, 'melk')
+    const rows = within(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' })).getAllByRole('listitem')
+    const last = rows[rows.length - 1]
+    expect(within(last).getByRole('textbox', { name: 'Item toevoegen' })).toBeInTheDocument()
+    const buttons = within(last).getAllByRole('button')
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Inspreken'])
+    delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition
+  })
+})
+
+describe('AC20: item aanpassen', () => {
+  it('maakt van de tekst een tekstveld als je erop tikt; Enter bewaart, op dezelfde plek', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    const field = screen.getByRole('textbox', { name: 'Item aanpassen' })
+    expect(field).toHaveValue('melk')
+    expect(field).toHaveFocus()
+    await user.clear(field)
+    await user.type(field, 'halfvolle melk{Enter}')
+    expect(itemTexts()).toEqual(['halfvolle melk', 'brood'])
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)[0].items[0].tekst).toBe('halfvolle melk')
+  })
+
+  it('bewaart ook als je ergens anders tikt, en Escape laat de tekst zoals hij was', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.type(screen.getByRole('textbox', { name: 'Item aanpassen' }), 'poeder{Escape}')
+    expect(itemTexts()).toEqual(['melk'])
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.type(screen.getByRole('textbox', { name: 'Item aanpassen' }), 'poeder')
+    await user.click(title())
+    expect(itemTexts()).toEqual(['melkpoeder'])
+  })
+
+  it('laat het item staan bij een lege tekst, en meldt een tekst die er al op staat', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.clear(screen.getByRole('textbox', { name: 'Item aanpassen' }))
+    await user.keyboard('{Enter}')
+    expect(itemTexts()).toEqual(['melk', 'brood'])
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.clear(screen.getByRole('textbox', { name: 'Item aanpassen' }))
+    await user.keyboard('Brood{Enter}')
+    expect(itemTexts()).toEqual(['melk', 'brood'])
+    expect(screen.getByRole('status')).toHaveTextContent('Brood staat er al op.')
+  })
+
+  it('laat afvinken met het rondje en weggooien met het kruisje gewoon werken', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    await user.click(itemButton('melk'))
+    expect(itemButton('melk')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('textbox', { name: 'Item aanpassen' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'melk weggooien' }))
+    expect(itemTexts()).toEqual([])
+  })
+})
+
+describe('AC21: items verplaatsen', () => {
+  it('berekent de nieuwe plek uit hoe ver je sleept', () => {
+    const heights = [48, 48, 48, 48]
+    expect(dropIndex(0, 0, heights)).toBe(0)
+    expect(dropIndex(0, 30, heights)).toBe(0)
+    expect(dropIndex(0, 50, heights)).toBe(1)
+    expect(dropIndex(0, 100, heights)).toBe(2)
+    expect(dropIndex(3, -500, heights)).toBe(0)
+    expect(dropIndex(2, -20, heights)).toBe(2)
+  })
+
+  it('verplaatst een item door de greep vast te pakken en te slepen', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 48 } as DOMRect)
+    const grip = screen.getByRole('button', { name: 'melk verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 100 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 160 })
+    expect(grip.closest('li')).toHaveClass('dragging')
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 160 })
+    vi.restoreAllMocks()
+    expect(itemTexts()).toEqual(['brood', 'melk', 'kaas'])
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)[0].items.map((i: { tekst: string }) => i.tekst)).toEqual([
+      'brood',
+      'melk',
+      'kaas',
+    ])
+  })
+
+  it('verplaatst ook met de pijltjestoetsen, en houdt afgevinkte items afgevinkt', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    await user.click(itemButton('kaas'))
+    screen.getByRole('button', { name: 'kaas verplaatsen' }).focus()
+    await user.keyboard('{ArrowUp}{ArrowUp}{ArrowUp}')
+    expect(itemTexts()).toEqual(['kaas', 'melk', 'brood'])
+    expect(screen.getByRole('button', { name: 'kaas verplaatsen' })).toHaveFocus()
+    expect(itemButton('kaas')).toHaveAttribute('aria-pressed', 'true')
+    await user.keyboard('{ArrowDown}')
+    expect(itemTexts()).toEqual(['melk', 'kaas', 'brood'])
+  })
+})
+
+describe('AC22: items buiten beeld', () => {
+  it('telt de items boven het scherm en onder de invoerregel', () => {
+    const rows = [0, 1, 2, 3, 4].map((i) => ({ top: i * 50 - 60, bottom: i * 50 - 10 }))
+    // Midden van de regels: -35, 15, 65, 115, 165; in beeld van 0 tot 120.
+    expect(countHidden(rows, 0, 120)).toEqual({ above: 1, below: 1 })
+    expect(countHidden(rows, -100, 1000)).toEqual({ above: 0, below: 0 })
+  })
+
+  it('toont een pijltje met het aantal items boven en onder het scherm, en scrolt erheen', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'a, b, c, d, e, f')
+    // Nagebootst scherm: regels van 50 pixels, 2 items boven het scherm, de invoerregel op 150 pixels.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 150, bottom: 200 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      return { top: i * 50 - 100, bottom: i * 50 - 50, height: 50 } as DOMRect
+    })
+    const scrollBy = vi.fn()
+    window.scrollBy = scrollBy
+    fireEvent.scroll(window)
+    expect(screen.getByRole('button', { name: '2 items hoger' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '1 item lager' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '1 item lager' }))
+    expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: expect.any(Number) }))
+    expect(scrollBy.mock.calls[0][0].top).toBeGreaterThan(0)
+    vi.restoreAllMocks()
+  })
+
+  it('toont geen pijltjes als alles in beeld is', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
   })
 })

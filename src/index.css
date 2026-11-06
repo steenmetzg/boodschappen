@@ -203,6 +203,8 @@ h2 {
 .bottom {
   position: sticky;
   bottom: 0;
+  /* Boven de items die onder de vaste invoerregel doorschuiven (F29). */
+  z-index: 3;
   display: grid;
   gap: 8px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -376,12 +378,21 @@ h2 {
   padding-top: 10px;
 }
 
-/* Titelbalk: links de knop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
+/* Titelbalk van Mijn lijstjes: de titel met rechts de informatieknop en het tandwiel. */
+.main-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Titelbalk van een lijstje: links de terugknop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
 .list-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -409,7 +420,8 @@ h2 {
   border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  /* clip in plaats van hidden, zodat de invoerregel onderaan in beeld kan blijven staan (sticky). */
+  overflow: clip;
 }
 
 .item {
@@ -425,16 +437,157 @@ h2 {
   border-bottom: none;
 }
 
-.item-toggle {
+/* Greep om een item vast te pakken en te verplaatsen (F28). */
+.item-grip {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 48px;
+  margin-left: 2px;
+  border: none;
+  color: #b3b9c4;
+  cursor: grab;
+  /* Slepen met de vinger mag de pagina niet laten scrollen. */
+  touch-action: none;
+}
+
+.item.dragging {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.16);
+}
+
+.item.dragging .item-grip {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+/* Het rondje om af te vinken, met een aanraakgebied van 44 pixels (F6). */
+.item-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 48px;
+  border: none;
+}
+
+/* De tekst: tik om aan te passen (F27). */
+.item-text {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: none;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.item-edit {
   flex: 1;
   min-width: 0;
   display: flex;
+}
+
+.item-edit input,
+.add-row .add-item input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  margin: 4px 0;
+  padding: 0 8px;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.item-edit input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+/* De invoerregel onderaan het lijstje: een rondje dat (nog) niet werkt (F3). */
+.add-row {
+  /* Bij een lang lijstje blijft de invoerregel onderaan in beeld, boven de meldingen (F3). */
+  position: sticky;
+  z-index: 2;
+  padding-right: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+/* Staan er items onder de invoerregel, dan een grijze lijn erboven (F29). */
+.add-row.covering {
+  border-top: 1px solid var(--line);
+}
+
+/*
+ * Staan er items boven of onder het scherm, dan heeft de grijze scheidingslijn een lipje
+ * met een blauw pijltje en het aantal (F29): bovenaan naar boven, onderaan naar beneden.
+ */
+.more-items button {
+  position: absolute;
+  left: 50%;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 6px 4px 6px 14px;
-  border: none;
-  text-align: left;
+  gap: 2px;
+  min-width: 72px;
+  justify-content: center;
+  height: 20px;
+  padding: 0 16px 0 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* Bovenaan het scherm: de bovenrand van het lijstje, met het lipje naar boven. */
+.more-items.above {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  width: min(calc(100vw - 32px), 448px);
+  height: calc(20px + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  transform: translateX(-50%);
+}
+
+.more-items.above button {
+  bottom: -1px;
+  border-bottom-color: var(--surface);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Onderaan: de bovenrand van de invoerregel, met het lipje naar beneden. */
+.more-items.below {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+}
+
+.more-items.below button {
+  top: 0;
+  border-top-color: var(--surface);
+  border-radius: 0 0 8px 8px;
+}
+
+/* Ruimte voor het lipje boven het tekstveld. */
+.add-row.covering {
+  padding-top: 18px;
+}
+
+.add-row .item-check .check {
+  border-style: dashed;
 }
 
 /* Het rondje om af te vinken (F6); afgevinkt blauw met een wit vinkje. */
@@ -455,11 +608,6 @@ h2 {
   border-color: var(--accent);
 }
 
-.item-text {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 .item.done .item-text {
   color: var(--muted);
   text-decoration: line-through;
@@ -476,13 +624,14 @@ h2 {
   color: var(--muted);
 }
 
-/* Tekstveld met plusknop en microfoon, altijd onderaan in beeld (F3, F15). */
+/* Tekstveld met plusknop en microfoon, als laatste regel van het lijstje (F3, F15). */
 .add-item {
+  flex: 1;
   /* Zonder min-width 0 duwt het tekstveld de microfoon buiten het scherm. */
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .add-item input,
@@ -505,14 +654,12 @@ h2 {
   outline-offset: 1px;
 }
 
-.add-item .add {
-  color: var(--accent);
-}
-
-/* De microfoon: rond en gevuld blauw, zoals in WoonWerk. */
+/* De microfoon: rond en gevuld blauw, zoals in WoonWerk, rechts op de regel waar bij een item het kruisje staat. */
 .add-item .mic {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
+  /* Samen met de rand een aanraakgebied van 44 pixels, op de plek van het kruisje. */
+  margin: 0 6px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: var(--shadow-accent);
@@ -617,4 +764,8 @@ h2 {
   .item {
     transition: none;
   }
+}
+
+.lists-screen .confirm {
+  margin: 0 0 12px;
 }

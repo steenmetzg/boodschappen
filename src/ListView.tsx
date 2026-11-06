@@ -1,6 +1,16 @@
-import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
-import { Check, Info as InfoIcon, List, Mic, Plus, Settings as SettingsIcon, Trash2, X } from 'lucide-react'
-import { MAX_TEKST, type Item, type Lijstje } from './lists'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type TouchEvent,
+} from 'react'
+import { ArrowLeft, Check, ChevronDown, ChevronUp, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { countHidden, type Hidden } from './visibility'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
 const SWIPE_DELETE = 80
@@ -15,21 +25,53 @@ interface Props {
   onCloseNotice: () => void
   onAdd: (text: string) => void
   onToggle: (id: string) => void
+  onEdit: (id: string, text: string) => void
   onRemove: (id: string) => void
+  onMove: (from: number, to: number) => void
   onClear: (which: 'af' | 'alles') => void
-  onOpenLists: () => void
-  onOpenInfo: () => void
-  onOpenSettings: () => void
-  install: { show: boolean; install: () => void; notNow: () => void }
+  onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
 
-/** Eén item: tik om af te vinken (F6), kruisje of naar links vegen om weg te gooien (F7). */
-function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => void; onRemove: () => void }) {
+/** Een item dat je aan het verslepen bent (F28). */
+interface Drag {
+  id: string
+  from: number
+  to: number
+  dy: number
+  startY: number
+  heights: number[]
+}
+
+interface RowProps {
+  item: Item
+  /** Hoeveel pixels de regel omhoog of omlaag staat tijdens het verslepen. */
+  shift: number
+  dragging: boolean
+  onToggle: () => void
+  onEdit: (text: string) => void
+  onRemove: () => void
+  grip: {
+    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => void
+    onPointerMove: (e: PointerEvent<HTMLButtonElement>) => void
+    onPointerUp: () => void
+    onPointerCancel: () => void
+    onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
+  }
+}
+
+/**
+ * Eén item: vastpakken om te verplaatsen (F28), het rondje om af te vinken (F6), de tekst om aan te passen (F27),
+ * het kruisje of naar links vegen om weg te gooien (F7).
+ */
+function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip }: RowProps) {
   const [dx, setDx] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(item.tekst)
   const touch = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
 
   function onTouchStart(e: TouchEvent) {
+    if (editing) return
     const t = e.touches[0]
     touch.current = { x: t.clientX, y: t.clientY, dir: null }
   }
@@ -54,10 +96,31 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
     if (swiped) onRemove()
   }
 
+  function startEditing() {
+    setText(item.tekst)
+    setEditing(true)
+  }
+
+  function save(e?: FormEvent) {
+    e?.preventDefault()
+    if (!editing) return
+    setEditing(false)
+    if (text.trim() !== item.tekst) onEdit(text)
+  }
+
+  const style = dx
+    ? { transform: `translateX(${dx}px)`, transition: 'none' }
+    : dragging
+      ? { transform: `translateY(${shift}px)`, transition: 'none' }
+      : shift
+        ? { transform: `translateY(${shift}px)` }
+        : undefined
+
   return (
     <li
-      className={item.af ? 'item done' : 'item'}
-      style={dx ? { transform: `translateX(${dx}px)`, transition: 'none' } : undefined}
+      className={['item', item.af && 'done', dragging && 'dragging'].filter(Boolean).join(' ')}
+      data-id={item.id}
+      style={style}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -66,12 +129,44 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
         setDx(0)
       }}
     >
-      <button type="button" className="item-toggle" aria-pressed={item.af} onClick={onToggle}>
+      <button
+        type="button"
+        className="item-grip"
+        aria-label={`${item.tekst} verplaatsen`}
+        aria-description="Sleep omhoog of omlaag, of gebruik de pijltjestoetsen"
+        // Vastpakken is geen vegen om weg te gooien.
+        onTouchStart={(e) => e.stopPropagation()}
+        {...grip}
+      >
+        <GripVertical size={18} strokeWidth={1.75} aria-hidden />
+      </button>
+      <button type="button" className="item-check" aria-label={item.tekst} aria-pressed={item.af} onClick={onToggle}>
         <span className="check" aria-hidden>
           {item.af && <Check size={16} strokeWidth={2.5} />}
         </span>
-        <span className="item-text">{item.tekst}</span>
       </button>
+      {editing ? (
+        <form className="item-edit" onSubmit={save}>
+          <input
+            type="text"
+            aria-label="Item aanpassen"
+            enterKeyHint="done"
+            autoComplete="off"
+            autoFocus
+            maxLength={MAX_TEKST}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => save()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setEditing(false)
+            }}
+          />
+        </form>
+      ) : (
+        <button type="button" className="item-text" aria-label={`${item.tekst} aanpassen`} onClick={startEditing}>
+          {item.tekst}
+        </button>
+      )}
       <button type="button" className="item-delete" aria-label={`${item.tekst} weggooien`} onClick={onRemove}>
         <X size={18} strokeWidth={1.75} aria-hidden />
       </button>
@@ -79,32 +174,74 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
   )
 }
 
-/** Het hoofdscherm met één lijstje (F1 t/m F8, F15). */
+/** Het scherm van één lijstje (F1 t/m F8, F15, F27, F28). */
 export default function ListView({
   lijstje,
   notice,
   onCloseNotice,
   onAdd,
   onToggle,
+  onEdit,
   onRemove,
+  onMove,
   onClear,
-  onOpenLists,
-  onOpenInfo,
-  onOpenSettings,
-  install,
+  onBack,
   mic,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
+  const [drag, setDrag] = useState<Drag | null>(null)
+  // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
+  const [moved, setMoved] = useState<string | null>(null)
+  const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
+  // Hoe hoog de meldingen onderaan zijn: daarboven blijft de invoerregel staan (F3).
+  const [bottomHeight, setBottomHeight] = useState(0)
   const input = useRef<HTMLInputElement>(null)
-  const hasDone = lijstje.items.some((i) => i.af)
+  const list = useRef<HTMLUListElement>(null)
+  const addRow = useRef<HTMLLIElement>(null)
+  const bottom = useRef<HTMLDivElement>(null)
+  const items = lijstje.items
+  const hasDone = items.some((i) => i.af)
+
+  useEffect(() => {
+    if (!moved) return
+    list.current?.querySelector<HTMLElement>(`li[data-id="${moved}"] .item-grip`)?.focus()
+  }, [moved, items])
+
+  /** Kijkt welke items buiten beeld staan, na elke wijziging, bij scrollen en als het scherm verandert (F29). */
+  function measure() {
+    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
+    const rects = Array.from(rows, (row) => row.getBoundingClientRect())
+    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
+    const next = countHidden(rects, 0, limit)
+    setHidden((prev) => (prev.above === next.above && prev.below === next.below ? prev : next))
+    setBottomHeight(bottom.current?.offsetHeight ?? 0)
+  }
+
+  useLayoutEffect(measure)
+
+  useEffect(() => {
+    window.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
+    }
+  })
+
+  /** Schuift het lijstje een flink stuk omhoog of omlaag, naar de items buiten beeld (F29). */
+  function scrollPage(direction: 1 | -1) {
+    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
+    window.scrollBy({ top: direction * Math.max(100, limit - 120), behavior: 'smooth' })
+  }
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (text.trim()) onAdd(text)
     setText('')
-    // Het veld blijft geselecteerd, zodat je meteen het volgende item typt (F3).
+    // Het veld blijft geselecteerd en in beeld, zodat je meteen het volgende item typt (F3).
     input.current?.focus()
+    requestAnimationFrame(() => input.current?.scrollIntoView?.({ block: 'nearest' }))
   }
 
   function clear(which: 'af' | 'alles') {
@@ -112,11 +249,55 @@ export default function ListView({
     setClearing(false)
   }
 
+  function gripFor(item: Item, index: number): RowProps['grip'] {
+    return {
+      onPointerDown(e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return
+        e.preventDefault()
+        e.currentTarget.setPointerCapture?.(e.pointerId)
+        const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
+        const heights = Array.from(rows, (row) => row.getBoundingClientRect().height)
+        setDrag({ id: item.id, from: index, to: index, dy: 0, startY: e.clientY, heights })
+      },
+      onPointerMove(e) {
+        if (!drag || drag.id !== item.id) return
+        const dy = e.clientY - drag.startY
+        setDrag({ ...drag, dy, to: dropIndex(drag.from, dy, drag.heights) })
+      },
+      onPointerUp() {
+        if (!drag) return
+        setDrag(null)
+        if (drag.to !== drag.from) onMove(drag.from, drag.to)
+      },
+      onPointerCancel() {
+        setDrag(null)
+      },
+      onKeyDown(e) {
+        const to = e.key === 'ArrowUp' ? index - 1 : e.key === 'ArrowDown' ? index + 1 : null
+        if (to === null) return
+        e.preventDefault()
+        if (to < 0 || to >= items.length) return
+        setMoved(item.id)
+        onMove(index, to)
+      },
+    }
+  }
+
+  /** Hoe ver een regel opzij schuift tijdens het verslepen, om plaats te maken voor het versleepte item. */
+  function shiftFor(index: number): number {
+    if (!drag) return 0
+    if (index === drag.from) return drag.dy
+    const h = drag.heights[drag.from] ?? 0
+    if (drag.from < index && index <= drag.to) return -h
+    if (drag.to <= index && index < drag.from) return h
+    return 0
+  }
+
   return (
     <main className="app list-screen">
       <header className="list-header">
-        <button type="button" className="icon-button" aria-label="Mijn lijstjes" onClick={onOpenLists}>
-          <List size={20} strokeWidth={1.75} aria-hidden />
+        <button type="button" className="back-button" aria-label="Terug naar Mijn lijstjes" onClick={onBack}>
+          <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
         </button>
         <h1>{lijstje.naam}</h1>
         <div className="header-actions">
@@ -125,16 +306,10 @@ export default function ListView({
             className="icon-button"
             aria-label="Lijstje leegmaken"
             aria-expanded={clearing}
-            disabled={lijstje.items.length === 0}
+            disabled={items.length === 0}
             onClick={() => setClearing(!clearing)}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button type="button" className="icon-button" aria-label="Informatie" onClick={onOpenInfo}>
-            <InfoIcon size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button type="button" className="icon-button" aria-label="Instellingen en backup" onClick={onOpenSettings}>
-            <SettingsIcon size={20} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
       </header>
@@ -156,28 +331,84 @@ export default function ListView({
         </section>
       )}
 
-      {lijstje.items.length === 0 ? (
-        <p className="muted empty">Nog niets op dit lijstje. Typ of spreek hieronder een item in.</p>
-      ) : (
-        <ul className="items" aria-label={`Items op ${lijstje.naam}`}>
-          {lijstje.items.map((item) => (
-            <ItemRow key={item.id} item={item} onToggle={() => onToggle(item.id)} onRemove={() => onRemove(item.id)} />
-          ))}
-        </ul>
+      {hidden.above > 0 && (
+        // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
+        <div className="more-items above">
+          <button
+            type="button"
+            aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
+            onClick={() => scrollPage(-1)}
+          >
+            <ChevronUp size={14} strokeWidth={2.5} aria-hidden />
+            {hidden.above}
+          </button>
+        </div>
       )}
 
-      <div className="bottom">
-        {install.show && (
-          <section className="install" aria-label="App installeren">
-            <p>Lijstjes als app installeren?</p>
-            <button type="button" onClick={install.notNow}>
-              Niet nu
-            </button>
-            <button type="button" className="install-now" onClick={install.install}>
-              Installeren
-            </button>
-          </section>
-        )}
+      <ul ref={list} className="items" aria-label={`Items op ${lijstje.naam}`}>
+        {items.map((item, index) => (
+          <ItemRow
+            key={item.id}
+            item={item}
+            shift={shiftFor(index)}
+            dragging={drag?.id === item.id}
+            onToggle={() => onToggle(item.id)}
+            onEdit={(t) => onEdit(item.id, t)}
+            onRemove={() => onRemove(item.id)}
+            grip={gripFor(item, index)}
+          />
+        ))}
+        {/* De invoerregel staat als laatste regel in het lijstje (F3, F15). */}
+        <li
+          ref={addRow}
+          className={hidden.below > 0 ? 'item add-row covering' : 'item add-row'}
+          style={{ bottom: bottomHeight }}
+        >
+          {hidden.below > 0 && (
+            // De bovenrand van de invoerregel wordt een blauwe lijn met een lipje (F29).
+            <div className="more-items below">
+              <button
+                type="button"
+                aria-label={hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
+                onClick={() => scrollPage(1)}
+              >
+                <ChevronDown size={14} strokeWidth={2.5} aria-hidden />
+                {hidden.below}
+              </button>
+            </div>
+          )}
+          <span className="item-grip" aria-hidden />
+          <span className="item-check" aria-hidden>
+            <span className="check" />
+          </span>
+          <form className="add-item" onSubmit={submit}>
+            <input
+              ref={input}
+              type="text"
+              aria-label="Item toevoegen"
+              placeholder="Item toevoegen"
+              enterKeyHint="enter"
+              autoComplete="off"
+              maxLength={MAX_TEKST * 10}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            {mic.show && (
+              <button
+                type="button"
+                className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
+                aria-label={mic.listening ? 'Stoppen met luisteren' : 'Inspreken'}
+                aria-pressed={mic.listening}
+                onClick={mic.listening ? mic.stop : mic.start}
+              >
+                <Mic size={16} strokeWidth={2} aria-hidden />
+              </button>
+            )}
+          </form>
+        </li>
+      </ul>
+
+      <div ref={bottom} className="bottom">
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>
@@ -194,39 +425,6 @@ export default function ListView({
             </section>
           )
         )}
-        <form className="add-item" onSubmit={submit}>
-          <input
-            ref={input}
-            type="text"
-            aria-label="Item toevoegen"
-            placeholder="Item toevoegen"
-            enterKeyHint="enter"
-            autoComplete="off"
-            maxLength={MAX_TEKST * 10}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="icon-button add"
-            aria-label="Toevoegen"
-            // Het toetsenbord blijft open als je op de plusknop tikt.
-            onPointerDown={(e) => e.preventDefault()}
-          >
-            <Plus size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          {mic.show && (
-            <button
-              type="button"
-              className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
-              aria-label={mic.listening ? 'Stoppen met luisteren' : 'Inspreken'}
-              aria-pressed={mic.listening}
-              onClick={mic.listening ? mic.stop : mic.start}
-            >
-              <Mic size={20} strokeWidth={1.75} aria-hidden />
-            </button>
-          )}
-        </form>
       </div>
     </main>
   )

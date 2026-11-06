@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import folderStoreSource from './folderStore.ts?raw'
-import { typeItem } from './test/helpers'
+import { rememberFirstList, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
@@ -13,9 +13,11 @@ vi.mock('./folderStore', () => ({
 describe('AC16: eigen opslag naast WoonWerk', () => {
   it('gebruikt alleen sleutels die met "lijstjes-" beginnen', async () => {
     vi.stubGlobal('webkitSpeechRecognition', class {})
+    rememberFirstList()
     const user = userEvent.setup()
     render(<App />)
     await typeItem(user, 'melk')
+    await user.click(screen.getByRole('button', { name: 'Terug naar Mijn lijstjes' }))
     await user.click(screen.getByRole('button', { name: 'Instellingen en backup' }))
     await user.click(screen.getByRole('button', { name: 'Microfoon' }))
     const keys = Object.keys(localStorage)
@@ -27,6 +29,7 @@ describe('AC16: eigen opslag naast WoonWerk', () => {
   it('leest of overschrijft de gegevens van WoonWerk nooit', async () => {
     localStorage.setItem('vervoer-registraties', '{"2026-11-06":["fiets"]}')
     localStorage.setItem('spraak-aan', 'nee')
+    rememberFirstList()
     const user = userEvent.setup()
     render(<App />)
     await typeItem(user, 'melk')

@@ -26,8 +26,10 @@ describe('AC19: past op een telefoon', () => {
     expect(rule('.app.list-screen,\n.app.lists-screen')).toContain('min-height: 100dvh;')
   })
 
-  it('heeft aanraakgebieden van minstens 44 pixels voor afvinken en weggooien', () => {
-    expect(rule('.item-toggle')).toContain('min-height: 48px;')
+  it('heeft aanraakgebieden van minstens 44 pixels voor afvinken, aanpassen en weggooien', () => {
+    expect(rule('.item-check')).toContain('width: 44px;')
+    expect(rule('.item-check')).toContain('height: 48px;')
+    expect(rule('.item-text')).toContain('min-height: 48px;')
     expect(rule('.item-delete')).toContain('height: 44px;')
   })
 })

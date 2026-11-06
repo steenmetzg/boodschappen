@@ -155,15 +155,16 @@ export function saveLijstjes(lijstjes: Lijstje[]): void {
   }
 }
 
-/** Het laatst geopende lijstje; bestaat het niet meer, dan het eerste (F14). */
-export function loadCurrent(lijstjes: readonly Lijstje[]): string {
+/** Het laatst geopende lijstje (F1, F14); `null` als er nog nooit een lijstje is geopend. */
+export function loadCurrent(lijstjes: readonly Lijstje[]): string | null {
   try {
     const id = localStorage.getItem(CURRENT_KEY)
-    if (id && lijstjes.some((l) => l.id === id)) return id
+    if (!id) return null
+    // Bestaat het lijstje niet meer (bijv. na een backup), dan het eerste.
+    return lijstjes.some((l) => l.id === id) ? id : lijstjes[0].id
   } catch {
-    // Opslag niet beschikbaar.
+    return null
   }
-  return lijstjes[0].id
 }
 
 export function saveCurrent(id: string): void {
@@ -172,4 +173,43 @@ export function saveCurrent(id: string): void {
   } catch {
     // Opslag niet beschikbaar.
   }
+}
+
+export interface EditResult {
+  lijstje: Lijstje
+  /** Een melding als de nieuwe tekst niet kan, of `null`. */
+  error: string | null
+}
+
+/** Geeft een item een nieuwe tekst (F27); leeg laat het item zoals het was, dubbel geeft een melding (F5). */
+export function editItem(lijstje: Lijstje, id: string, tekst: string): EditResult {
+  const nieuw = tekst.trim().slice(0, MAX_TEKST).trim()
+  if (!nieuw) return { lijstje, error: null }
+  const other = lijstje.items.find((i) => i.id !== id && sameText(i.tekst, nieuw))
+  if (other) return { lijstje, error: `${capitalize(other.tekst)} staat er al op.` }
+  return { lijstje: { ...lijstje, items: lijstje.items.map((i) => (i.id === id ? { ...i, tekst: nieuw } : i)) }, error: null }
+}
+
+/** Verplaatst het item op plek `from` naar plek `to` (F28). */
+export function moveItem(lijstje: Lijstje, from: number, to: number): Lijstje {
+  const items = [...lijstje.items]
+  if (from < 0 || from >= items.length || to < 0 || to >= items.length || from === to) return lijstje
+  const [item] = items.splice(from, 1)
+  items.splice(to, 0, item)
+  return { ...lijstje, items }
+}
+
+/**
+ * De nieuwe plek van een item dat `dy` pixels is versleept (F28): het aantal andere items
+ * waarvan het midden boven het midden van het versleepte item ligt.
+ */
+export function dropIndex(from: number, dy: number, heights: readonly number[]): number {
+  let top = 0
+  const centers = heights.map((h) => {
+    const c = top + h / 2
+    top += h
+    return c
+  })
+  const center = centers[from] + dy
+  return centers.filter((c, i) => i !== from && c < center).length
 }
