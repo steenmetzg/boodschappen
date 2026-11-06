@@ -693,6 +693,13 @@ h2 {
   grid-template-columns: 1fr 1fr;
 }
 
+/* Knoppen met twee regels tekst: wat kleinere regelafstand en wat meer ruimte boven en onder. */
+.clear-choice .confirm-buttons button {
+  min-height: 48px;
+  padding: 6px 12px;
+  line-height: 1.2;
+}
+
 .clear-choice .confirm-buttons .wide,
 .clear-choice .confirm-buttons .cancel {
   grid-column: 1 / -1;
