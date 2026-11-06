@@ -54,26 +54,27 @@ afterEach(() => {
 })
 
 describe('splitSpoken', () => {
-  it('splitst bij "en", "komma" en komma\'s, en begint elk item met een kleine letter', () => {
-    expect(splitSpoken('Melk en brood komma kaas')).toEqual(['melk', 'brood', 'kaas'])
-    expect(splitSpoken('Melk, brood en 2 pakken koffie.')).toEqual(['melk', 'brood', '2 pakken koffie'])
+  it('splitst bij "komma" en komma\'s, en begint elk item met een kleine letter', () => {
+    expect(splitSpoken('Melk komma brood komma kaas')).toEqual(['melk', 'brood', 'kaas'])
+    expect(splitSpoken('Melk, brood, 2 pakken koffie.')).toEqual(['melk', 'brood', '2 pakken koffie'])
     expect(splitSpoken('wc-papier')).toEqual(['wc-papier'])
   })
 
-  it('laat "en" midden in een woord staan', () => {
-    expect(splitSpoken('bananen en tomaten')).toEqual(['bananen', 'tomaten'])
+  it('splitst niet bij "en"', () => {
+    expect(splitSpoken('Jan en Piet ophalen van Schiphol')).toEqual(['jan en Piet ophalen van Schiphol'])
+    expect(splitSpoken('bananen en tomaten komma kaas')).toEqual(['bananen en tomaten', 'kaas'])
   })
 })
 
 describe('AC13: items inspreken', () => {
-  it('zet "melk en brood komma kaas" als drie items op het huidige lijstje', async () => {
+  it('zet "melk komma brood komma kaas" als drie items op het huidige lijstje', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'Inspreken' }))
     expect(FakeRecognition.last?.lang).toBe('nl-NL')
     expect(screen.getByText('Luisteren…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stoppen met luisteren' })).toHaveAttribute('aria-pressed', 'true')
-    FakeRecognition.last!.hear('Melk en brood komma kaas')
+    FakeRecognition.last!.hear('Melk komma brood komma kaas')
     expect(itemTexts()).toEqual(['melk', 'brood', 'kaas'])
     expect(screen.getByRole('status')).toHaveTextContent('Toegevoegd: melk, brood, kaas.')
   })
@@ -83,7 +84,7 @@ describe('AC13: items inspreken', () => {
     render(<App />)
     await typeItem(user, 'melk')
     await user.click(screen.getByRole('button', { name: 'Inspreken' }))
-    FakeRecognition.last!.hear('melk en eieren')
+    FakeRecognition.last!.hear('melk komma eieren')
     expect(itemTexts()).toEqual(['melk', 'eieren'])
     expect(screen.getByRole('status')).toHaveTextContent('Toegevoegd: eieren. Melk staat er al op.')
   })

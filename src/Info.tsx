@@ -39,7 +39,7 @@ export default function Info({ onClose }: Props) {
         <section className="setting info">
           <h2>Inspreken</h2>
           <p>
-            Met de microfoon spreek je items in, ook meerdere tegelijk: "melk, brood en twee pakken koffie". Inspreken
+            Met de microfoon spreek je items in, ook meerdere tegelijk door "komma" te zeggen: "melk komma brood komma twee pakken koffie". Het woordje "en" splitst niet, dus "Jan en Piet ophalen" blijft één item. Inspreken
             werkt alleen met internet.
           </p>
         </section>

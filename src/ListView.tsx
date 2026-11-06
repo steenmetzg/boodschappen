@@ -428,7 +428,7 @@ export default function ListView({
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>
-              <strong>Luisteren…</strong> Zeg bijvoorbeeld: melk, brood en twee pakken koffie
+              <strong>Luisteren…</strong> Zeg bijvoorbeeld: melk komma brood komma twee pakken koffie
             </p>
           </section>
         ) : (
