@@ -1,7 +1,7 @@
 # Specificatie: Lijstjes
 
 Status: **concept, ter goedkeuring door Greco**
-Versie: 1.0 (6 november 2026): eerste versie; items kun je afvinken en weggooien (zonder bevestiging of ongedaan maken), een heel lijstje weggooien kun je wel ongedaan maken (op verzoek van Greco), op basis van het plan "Plan Lijstjes PWA" en de werking en vormgeving van WoonWerk; de app heet Lijstjes (op verzoek van Greco, eerder "Boodschappen"; app-versie Lijstjes 1.0.0)
+Versie: 1.0 (6 november 2026): eerste versie; items kun je afvinken (ze blijven doorgestreept op hun plek staan) en weggooien (zonder bevestiging of ongedaan maken), een heel lijstje weggooien kun je wel ongedaan maken (op verzoek van Greco), op basis van het plan "Plan Lijstjes PWA" en de werking en vormgeving van WoonWerk; de app heet Lijstjes (op verzoek van Greco, eerder "Boodschappen"; app-versie Lijstjes 1.0.0)
 
 ## 1. Doel
 
@@ -21,7 +21,7 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 - **Item**: één regel tekst op een lijstje, bijvoorbeeld "melk" of "2 pakken koffie" (maximaal 60 tekens).
   Een aantal is gewoon deel van de tekst; er is geen apart veld voor aantal of categorie.
 - **Afvinken**: een item dat klaar is (gekocht, gedaan, ingepakt), vink je af. Het blijft op het lijstje staan,
-  doorgestreept en onderaan, tot je het weer aanvinkt of weggooit.
+  doorgestreept op dezelfde plek, tot je het weer aanvinkt of weggooit.
 - **Weggooien**: een item verdwijnt meteen van het lijstje, zonder bevestiging en zonder ongedaan maken.
 - **Huidig lijstje**: het lijstje dat je het laatst hebt geopend. De app opent daarmee.
 
@@ -29,12 +29,12 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 
 | Nr | Functie | Omschrijving |
 |----|---------|--------------|
-| F1 | Lijstje tonen | Het hoofdscherm toont één lijstje: bovenaan de naam van het lijstje (de titel), daaronder de items onder elkaar in de volgorde waarin ze zijn toegevoegd (de nieuwste onderaan), met dunne lijnen ertussen. Afgevinkte items (F6) staan daaronder, in de volgorde waarin je ze hebt afgevinkt. Bij openen is dat het huidige lijstje. Een leeg lijstje toont in grijs: "Nog niets op dit lijstje. Typ of spreek hieronder een item in." |
+| F1 | Lijstje tonen | Het hoofdscherm toont één lijstje: bovenaan de naam van het lijstje (de titel), daaronder de items onder elkaar in de volgorde waarin ze zijn toegevoegd (de nieuwste onderaan), met dunne lijnen ertussen. Afgevinkte items (F6) blijven op hun plek staan, doorgestreept. Bij openen is dat het huidige lijstje. Een leeg lijstje toont in grijs: "Nog niets op dit lijstje. Typ of spreek hieronder een item in." |
 | F2 | Wisselen van lijstje | Links van de titel staat een knop met een lijsticoon die het scherm "Mijn lijstjes" opent (F9). Tik je daar op een lijstje, dan wordt dat het huidige lijstje en ga je terug naar het hoofdscherm. |
 | F3 | Boodschap typen | Onderaan het hoofdscherm staat altijd een tekstveld "Item toevoegen" met rechts een plusknop. Enter op het toetsenbord of de plusknop zet de tekst als item onderaan het lijstje. Het veld wordt leeg en blijft geselecteerd (het toetsenbord blijft open), zodat je meteen de volgende typt. Spaties aan het begin en eind tellen niet mee; een leeg veld doet niets. |
 | F4 | Meerdere tegelijk typen | Typ je een komma, dan wordt het meerdere items: "melk, brood, kaas" zet er drie op. |
-| F5 | Dubbel item | Staat een item al op het lijstje (hoofdletters en spaties aan begin en eind tellen niet mee), dan komt het er niet nog eens op. Onderaan staat dan kort de melding "Melk staat er al op". Is dat item afgevinkt, dan wordt het weer aangevinkt en komt het onderaan de open items te staan, met de melding "Melk staat weer op je lijstje". |
-| F6 | Afvinken | Elk item heeft links een rondje (aanraakgebied minstens 44 pixels). Tik je op het rondje of op de tekst, dan wordt het rondje blauw met een wit vinkje, de tekst grijs en doorgestreept, en schuift het item naar de afgevinkte items onderaan (F1). Nog eens tikken vinkt het weer aan: het komt terug onderaan de open items. |
+| F5 | Dubbel item | Staat een item al op het lijstje (hoofdletters en spaties aan begin en eind tellen niet mee), dan komt het er niet nog eens op. Onderaan staat dan kort de melding "Melk staat er al op". Is dat item afgevinkt, dan wordt het weer aangevinkt op dezelfde plek, met de melding "Melk staat weer op je lijstje". |
+| F6 | Afvinken | Elk item heeft links een rondje (aanraakgebied minstens 44 pixels). Tik je op het rondje of op de tekst, dan wordt het rondje blauw met een wit vinkje, de tekst grijs en doorgestreept. Het item blijft op zijn plek staan en schuift niet naar onderen. Nog eens tikken vinkt het weer aan, ook op dezelfde plek. |
 | F7 | Item weggooien | Elk item heeft rechts een klein kruisje "Weggooien" (aanraakgebied minstens 44 pixels). Tik je erop, of veeg je de regel naar links, dan is het item meteen weg: geen bevestiging en geen ongedaan maken. Dit werkt voor open en afgevinkte items. |
 | F8 | Lijstje leegmaken | Rechts in de titelbalk staat een knop met een prullenbakje. Die opent een kleine keuze met **Afgevinkte weggooien** (gooit alle afgevinkte items weg) en **Alles weggooien** (gooit alle items weg), en **Annuleren**. Het lijstje zelf blijft bestaan. Er is geen bevestiging en geen ongedaan maken, net als bij F7. Een keuze waarvoor niets op het lijstje staat, is inactief; bij een leeg lijstje is de prullenbakknop inactief. |
 | F9 | Scherm Mijn lijstjes | Het scherm "Mijn lijstjes" toont al je lijstjes onder elkaar, in de volgorde waarin je ze hebt gemaakt, elk met de naam en rechts het aantal open (niet afgevinkte) items in een lichtblauw rondje (zoals het label "vandaag" in WoonWerk). Het huidige lijstje heeft een blauwe streep links. Een knop "Terug" brengt je terug naar het hoofdscherm. |
@@ -64,7 +64,7 @@ Eén persoon (Greco) die de app op zijn telefoon gebruikt, via een snelkoppeling
 | AC2 | "melk" typen en Enter drukken zet "melk" onderaan het lijstje; het veld is daarna leeg en heeft de focus (F3). |
 | AC3 | "melk, brood, kaas" typen zet drie items op het lijstje (F4). |
 | AC4 | "Melk" toevoegen terwijl "melk" er al op staat, voegt niets toe en toont "Melk staat er al op" (F5). |
-| AC5 | Tikken op het rondje van "melk" vinkt het af: doorgestreept en onder de open items; nog eens tikken zet het terug onderaan de open items. "Melk" toevoegen terwijl "melk" is afgevinkt, vinkt het weer aan (F5, F6). |
+| AC5 | Tikken op het rondje van "melk" vinkt het af: doorgestreept en op dezelfde plek in het lijstje; nog eens tikken maakt het weer gewoon, ook op dezelfde plek. "Melk" toevoegen terwijl "melk" is afgevinkt, vinkt het weer aan (F5, F6). |
 | AC6 | Tikken op het kruisje van "melk" gooit het meteen weg, zonder vraag of melding om ongedaan te maken (F7). |
 | AC7 | **Afgevinkte weggooien** gooit alleen de afgevinkte items weg; **Alles weggooien** gooit alles weg en het lijstje blijft bestaan; **Annuleren** laat alles staan (F8). |
 | AC8 | Een nieuw lijstje "AH" maken maakt het het huidige lijstje; een tweede "ah" geeft "Er is al een lijstje AH" (F10). |
