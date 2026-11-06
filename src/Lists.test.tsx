@@ -551,6 +551,8 @@ describe('AC22: items buiten beeld', () => {
       if (this.classList.contains('add-row')) return { top: 150, bottom: 200 } as DOMRect
       const rows = Array.from(document.querySelectorAll('li[data-id]'))
       const i = rows.indexOf(this)
+      // De grijze lijn bovenaan zelf staat op 0 pixels.
+      if (i === -1) return { top: 0, bottom: 0, height: 0 } as DOMRect
       return { top: i * 50 - 100, bottom: i * 50 - 50, height: 50 } as DOMRect
     })
     const scrollBy = vi.fn()
@@ -562,6 +564,27 @@ describe('AC22: items buiten beeld', () => {
     expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: expect.any(Number) }))
     expect(scrollBy.mock.calls[0][0].top).toBeGreaterThan(0)
     vi.restoreAllMocks()
+  })
+
+  it('schuift het lijstje omhoog als je een item toevoegt, zodat het laatste item boven de invoerregel te zien is', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'a, b, c')
+    // Nagebootst vol scherm: regels van 50 pixels, de invoerregel staat vast op 120 pixels.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 120, bottom: 170 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      return { top: i * 50, bottom: i * 50 + 50, height: 50 } as DOMRect
+    })
+    const scrollBy = vi.fn()
+    window.scrollBy = scrollBy
+    await typeItem(user, 'd')
+    // Het nieuwe item "d" staat van 150 tot 200, dus 80 pixels omhoog schuiven.
+    expect(scrollBy).toHaveBeenCalledWith({ top: 80 })
+    scrollBy.mockClear()
+    await user.click(screen.getByRole('button', { name: 'a weggooien' }))
+    expect(scrollBy).not.toHaveBeenCalled()
   })
 
   it('toont geen pijltjes als alles in beeld is', async () => {
