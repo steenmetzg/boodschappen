@@ -380,20 +380,20 @@ h2 {
 
 /* Titelbalk van Mijn lijstjes: de titel met rechts de informatieknop en het tandwiel. */
 .main-header {
-  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
 }
 
 /* Titelbalk van een lijstje: links de terugknop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
 .list-header {
-  display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.main-header,
+.list-header {
+  display: grid;
   align-items: center;
   gap: 8px;
-  /* De titelbalk blijft bovenaan staan; alleen de items scrollen eronder door. */
+  /* De titelbalk blijft bovenaan staan; alleen de regels scrollen eronder door (F29, F30). */
   position: sticky;
   z-index: 4;
   top: 0;
@@ -403,6 +403,7 @@ h2 {
   background: var(--bg);
 }
 
+.main-header h1,
 .list-header h1 {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -644,8 +645,7 @@ h2 {
   gap: 2px;
 }
 
-.add-item input,
-.name-form input {
+.add-item input {
   flex: 1;
   min-width: 0;
   min-height: 44px;
@@ -658,8 +658,7 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.add-item input:focus-visible,
-.name-form input:focus-visible {
+.add-item input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -684,7 +683,9 @@ h2 {
 }
 
 .clear-choice {
-  margin: 0 0 12px;
+  /* Onder de knoppen in de vaste titelbalk, over de hele breedte (F8). */
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
 }
 
 .clear-choice .confirm-buttons {
@@ -692,6 +693,14 @@ h2 {
   grid-template-columns: 1fr 1fr;
 }
 
+/* Knoppen met twee regels tekst: wat kleinere regelafstand en wat meer ruimte boven en onder. */
+.clear-choice .confirm-buttons button {
+  min-height: 48px;
+  padding: 6px 12px;
+  line-height: 1.2;
+}
+
+.clear-choice .confirm-buttons .wide,
 .clear-choice .confirm-buttons .cancel {
   grid-column: 1 / -1;
 }
@@ -701,23 +710,10 @@ h2 {
   cursor: default;
 }
 
-/* Mijn lijstjes (F9 t/m F12). */
-.lists {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.list-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.list-row .icon-button {
-  color: var(--muted);
+/* Mijn lijstjes (F9 t/m F12, F30): de lijstjes in één wit vlak, net als de items van een lijstje. */
+.list-row .item-delete:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .list-open {
@@ -727,18 +723,22 @@ h2 {
   align-items: center;
   gap: 8px;
   min-height: 48px;
-  padding: 0 12px;
-  border: 1px solid transparent;
-  border-left: 5px solid transparent;
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  padding: 6px 4px 6px 8px;
+  border: none;
   text-align: left;
 }
 
 /* Het huidige lijstje heeft een blauwe streep links. */
-.list-row.current .list-open {
-  border-left-color: var(--accent);
+.list-row.current {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.list-row.current.dragging {
+  box-shadow: inset 4px 0 0 var(--accent), 0 6px 18px rgba(16, 24, 40, 0.16);
+}
+
+.list-row .item-edit input {
+  margin-left: 4px;
 }
 
 .list-name {
@@ -747,20 +747,6 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.list-row .name-form {
-  flex: 1;
-}
-
-.name-form {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.name-form .message {
-  margin-top: 4px;
 }
 
 .undo-button {
@@ -777,5 +763,10 @@ h2 {
 }
 
 .lists-screen .confirm {
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+/* Op Mijn lijstjes zonder microfoon wat ruimte rechts van het tekstveld. */
+.lists-screen .add-item:not(:has(.mic)) {
+  padding-right: 8px;
 }

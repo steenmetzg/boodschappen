@@ -29,7 +29,7 @@ export default function Info({ onClose }: Props) {
       <section className="setting info">
         <h2>Mijn lijstjes</h2>
         <p>
-          Je kunt zoveel lijstjes bijhouden als je wilt, elk met een eigen naam. Lijstjes onthoudt welk lijstje je het
+          Je kunt zoveel lijstjes bijhouden als je wilt, elk met een eigen naam. Ook de volgorde van je lijstjes bepaal je zelf. Lijstjes onthoudt welk lijstje je het
           laatst gebruikte en opent dat meteen. Een lijstje kun je helemaal verwijderen of je verwijdert alleen de
           afgevinkte items.
         </p>
@@ -39,8 +39,9 @@ export default function Info({ onClose }: Props) {
         <section className="setting info">
           <h2>Inspreken</h2>
           <p>
-            Je kunt items ook inspreken, meerdere tegelijk. Lijstjes maakt van alles wat tussen het woord "komma" staat
-            een apart item, dus "melk komma brood komma twee pakken koffie" wordt drie items. Inspreken werkt alleen met internet.
+            Je kunt de naam van nieuwe lijstjes inspreken. Je kunt in een lijstje ook items inspreken, meerdere
+            tegelijk. Lijstjes maakt van alles wat tussen het woord "komma" staat een apart item, dus "melk komma brood
+            komma twee pakken koffie" wordt drie items. Inspreken werkt alleen met internet.
           </p>
         </section>
       )}

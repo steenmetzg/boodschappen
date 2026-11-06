@@ -1,24 +1,13 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type KeyboardEvent,
-  type PointerEvent,
-  type TouchEvent,
-} from 'react'
-import { ArrowLeft, Check, ChevronDown, ChevronUp, GripVertical, Mic, Trash2, X } from 'lucide-react'
-import { dropIndex, limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
-import { countHidden, type Hidden } from './visibility'
+import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { ArrowLeft, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { MoreAbove, MoreBelow } from './MoreItems'
+import { useScrollList, type Grip } from './scrollList'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
 const SWIPE_DELETE = 80
 // Pas na zoveel pixels beslissen we of de vinger horizontaal (vegen) of verticaal (scrollen) beweegt.
 const SWIPE_LOCK = 10
-
-// Zoveel pixels schuift de lijn met het lipje voor items erboven over de ruimte onder de titel (F29).
-const ABOVE_OVERLAP = 10
 
 export type Notice = { kind: 'ok' | 'error'; text: string }
 
@@ -32,31 +21,10 @@ interface Props {
   onRemove: (id: string) => void
   onMove: (from: number, to: number) => void
   onClear: (which: 'af' | 'alles') => void
+  /** Gooit de items én het lijstje zelf weg; `null` als dit het laatste lijstje is (F8). */
+  onDeleteList: (() => void) | null
   onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
-}
-
-/** Een item dat je aan het verslepen bent (F28). */
-interface Drag {
-  id: string
-  from: number
-  to: number
-  dy: number
-  startY: number
-  /** Hoe ver de pagina gescrold was bij het vastpakken; het lijstje scrolt mee tijdens het slepen. */
-  startScroll: number
-  heights: number[]
-}
-
-/** Zo dicht (in pixels) bij de boven- of onderrand scrolt het lijstje mee tijdens het slepen (F28). */
-const EDGE_ZONE = 56
-/** Zo snel (in pixels per beeldje) scrolt het lijstje hoogstens mee tijdens het slepen. */
-const EDGE_SPEED = 14
-
-/** De nieuwe stand van een versleept item, voor de vinger op hoogte `pointerY` (F28). */
-function dragTo(drag: Drag, pointerY: number): Drag {
-  const dy = pointerY - drag.startY + window.scrollY - drag.startScroll
-  return { ...drag, dy, to: dropIndex(drag.from, dy, drag.heights) }
 }
 
 interface RowProps {
@@ -67,13 +35,7 @@ interface RowProps {
   onToggle: () => void
   onEdit: (text: string) => void
   onRemove: () => void
-  grip: {
-    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => void
-    onPointerMove: (e: PointerEvent<HTMLButtonElement>) => void
-    onPointerUp: () => void
-    onPointerCancel: () => void
-    onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
-  }
+  grip: Grip
 }
 
 /**
@@ -201,106 +163,17 @@ export default function ListView({
   onRemove,
   onMove,
   onClear,
+  onDeleteList,
   onBack,
   mic,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
-  const [drag, setDrag] = useState<Drag | null>(null)
-  // Waar de vinger is tijdens het slepen, voor het meescrollen bij de rand (F28).
-  const pointerY = useRef(0)
-  const dragId = drag?.id
-
-  // Sleep je een item tot bij de titel of de invoerregel, dan scrolt het lijstje mee, zodat je het
-  // ook naar items buiten beeld kunt verplaatsen (F28).
-  useEffect(() => {
-    if (!dragId) return
-    let frame = 0
-    function step() {
-      const top = header.current?.getBoundingClientRect().bottom ?? 0
-      const bottom = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
-      const y = pointerY.current
-      let speed = 0
-      if (y < top + EDGE_ZONE) speed = -EDGE_SPEED * Math.min(1, (top + EDGE_ZONE - y) / EDGE_ZONE)
-      else if (y > bottom - EDGE_ZONE) speed = EDGE_SPEED * Math.min(1, (y - bottom + EDGE_ZONE) / EDGE_ZONE)
-      if (speed !== 0) {
-        const before = window.scrollY
-        window.scrollBy(0, speed)
-        if (window.scrollY !== before) setDrag((d) => (d ? dragTo(d, y) : d))
-      }
-      frame = requestAnimationFrame(step)
-    }
-    frame = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(frame)
-  }, [dragId])
-  // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
-  const [moved, setMoved] = useState<string | null>(null)
-  const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
-  // Hoe hoog de meldingen onderaan zijn: daarboven blijft de invoerregel staan (F3).
-  const [bottomHeight, setBottomHeight] = useState(0)
-  // Hoe hoog de vaste titelbalk is: daaronder staat de lijn met het lipje voor items erboven (F29).
-  const [headerHeight, setHeaderHeight] = useState(0)
-  const header = useRef<HTMLElement>(null)
-  const input = useRef<HTMLInputElement>(null)
-  const list = useRef<HTMLUListElement>(null)
-  const addRow = useRef<HTMLLIElement>(null)
-  const bottom = useRef<HTMLDivElement>(null)
   const items = lijstje.items
   const hasDone = items.some((i) => i.af)
-
-  useEffect(() => {
-    if (!moved) return
-    list.current?.querySelector<HTMLElement>(`li[data-id="${moved}"] .item-grip`)?.focus()
-  }, [moved, items])
-
-  /** Kijkt welke items buiten beeld staan, na elke wijziging, bij scrollen en als het scherm verandert (F29). */
-  function measure() {
-    // Het item dat je versleept, telt niet mee: dat is altijd onder je vinger (F28, F29).
-    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]:not(.dragging)') ?? []
-    const rects = Array.from(rows, (row) => row.getBoundingClientRect())
-    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
-    // Staat de grijze lijn met het lipje bovenaan in beeld, dan telt alles daarachter als buiten beeld.
-    const top =
-      document.querySelector('.more-items.above')?.getBoundingClientRect().bottom ??
-      header.current?.getBoundingClientRect().bottom ??
-      0
-    const next = countHidden(rects, top, limit)
-    setHidden((prev) => (prev.above === next.above && prev.below === next.below ? prev : next))
-    setBottomHeight(bottom.current?.offsetHeight ?? 0)
-    setHeaderHeight(header.current?.offsetHeight ?? 0)
-  }
-
-  useLayoutEffect(measure)
-
-  // Komen er items bij (getypt of ingesproken), dan schuift het lijstje omhoog tot het laatste item
-  // net boven de invoerregel in beeld staat (F3, F29).
-  const count = useRef(items.length)
-  useLayoutEffect(() => {
-    const added = items.length > count.current
-    count.current = items.length
-    if (!added) return
-    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]')
-    const last = rows?.[rows.length - 1]
-    const limit = addRow.current?.getBoundingClientRect().top
-    if (!last || limit === undefined) return
-    const overlap = last.getBoundingClientRect().bottom - limit
-    if (overlap > 0) window.scrollBy({ top: overlap })
-  }, [items.length])
-
-  useEffect(() => {
-    window.addEventListener('scroll', measure, { passive: true })
-    window.addEventListener('resize', measure)
-    return () => {
-      window.removeEventListener('scroll', measure)
-      window.removeEventListener('resize', measure)
-    }
-  })
-
-  /** Schuift het lijstje een flink stuk omhoog of omlaag, naar de items buiten beeld (F29). */
-  function scrollPage(direction: 1 | -1) {
-    const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
-    window.scrollBy({ top: direction * Math.max(100, limit - 120), behavior: 'smooth' })
-  }
+  const input = useRef<HTMLInputElement>(null)
+  const scroll = useScrollList(items, onMove)
+  const { header, list, addRow, bottom, hidden } = scroll
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -315,51 +188,6 @@ export default function ListView({
     setClearing(false)
   }
 
-  function gripFor(item: Item, index: number): RowProps['grip'] {
-    return {
-      onPointerDown(e) {
-        if (e.pointerType === 'mouse' && e.button !== 0) return
-        e.preventDefault()
-        e.currentTarget.setPointerCapture?.(e.pointerId)
-        const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
-        const heights = Array.from(rows, (row) => row.getBoundingClientRect().height)
-        pointerY.current = e.clientY
-        setDrag({ id: item.id, from: index, to: index, dy: 0, startY: e.clientY, startScroll: window.scrollY, heights })
-      },
-      onPointerMove(e) {
-        if (!drag || drag.id !== item.id) return
-        pointerY.current = e.clientY
-        setDrag(dragTo(drag, e.clientY))
-      },
-      onPointerUp() {
-        if (!drag) return
-        setDrag(null)
-        if (drag.to !== drag.from) onMove(drag.from, drag.to)
-      },
-      onPointerCancel() {
-        setDrag(null)
-      },
-      onKeyDown(e) {
-        const to = e.key === 'ArrowUp' ? index - 1 : e.key === 'ArrowDown' ? index + 1 : null
-        if (to === null) return
-        e.preventDefault()
-        if (to < 0 || to >= items.length) return
-        setMoved(item.id)
-        onMove(index, to)
-      },
-    }
-  }
-
-  /** Hoe ver een regel opzij schuift tijdens het verslepen, om plaats te maken voor het versleepte item. */
-  function shiftFor(index: number): number {
-    if (!drag) return 0
-    if (index === drag.from) return drag.dy
-    const h = drag.heights[drag.from] ?? 0
-    if (drag.from < index && index <= drag.to) return -h
-    if (drag.to <= index && index < drag.from) return h
-    return 0
-  }
-
   return (
     <main className="app list-screen">
       <header ref={header} className="list-header">
@@ -371,85 +199,69 @@ export default function ListView({
           <button
             type="button"
             className="icon-button"
-            aria-label="Lijstje leegmaken"
+            aria-label="Lijstje weggooien"
             aria-expanded={clearing}
-            disabled={items.length === 0}
+            disabled={items.length === 0 && !onDeleteList}
             onClick={() => setClearing(!clearing)}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
+        {/* De keuze staat in de vaste titelbalk, zodat hij ook in beeld komt als je omlaag gescrold bent (F8). */}
+        {clearing && (
+          <section className="confirm clear-choice" aria-label="Lijstje weggooien">
+            <strong>Lijstje {lijstje.naam} weggooien</strong>
+            <div className="confirm-buttons">
+              <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
+                Afgevinkte weggooien
+              </button>
+              <button type="button" className="confirm-yes" disabled={items.length === 0} onClick={() => clear('alles')}>
+                Alle items weggooien
+              </button>
+              <button type="button" className="wide" disabled={!onDeleteList} onClick={() => onDeleteList?.()}>
+                Items én het lijstje weggooien
+              </button>
+              <button type="button" className="cancel" onClick={() => setClearing(false)}>
+                Annuleren
+              </button>
+            </div>
+          </section>
+        )}
       </header>
 
-      {clearing && (
-        <section className="confirm clear-choice" aria-label="Lijstje leegmaken">
-          <strong>Lijstje {lijstje.naam} leegmaken</strong>
-          <div className="confirm-buttons">
-            <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
-              Afgevinkte weggooien
-            </button>
-            <button type="button" className="confirm-yes" onClick={() => clear('alles')}>
-              Alles weggooien
-            </button>
-            <button type="button" className="cancel" onClick={() => setClearing(false)}>
-              Annuleren
-            </button>
-          </div>
-        </section>
-      )}
-
-      {hidden.above > 0 && (
-        // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
-        <div className="more-items above" style={{ top: Math.max(0, headerHeight - ABOVE_OVERLAP) }}>
-          <button
-            type="button"
-            aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
-            onClick={() => scrollPage(-1)}
-          >
-            <ChevronUp size={14} strokeWidth={2.5} aria-hidden />
-            {hidden.above}
-          </button>
-        </div>
-      )}
+      <MoreAbove
+        count={hidden.above}
+        words={['item', 'items']}
+        headerHeight={scroll.headerHeight}
+        onClick={() => scroll.scrollPage(-1)}
+      />
 
       <ul
         ref={list}
         className="items"
         aria-label={`Items op ${lijstje.naam}`}
         // Na verplaatsen schuiven de regels nog even naar hun plek; daarna opnieuw tellen (F29).
-        onTransitionEnd={measure}
+        onTransitionEnd={scroll.measure}
       >
         {items.map((item, index) => (
           <ItemRow
             key={item.id}
             item={item}
-            shift={shiftFor(index)}
-            dragging={drag?.id === item.id}
+            shift={scroll.shiftFor(index)}
+            dragging={scroll.draggingId === item.id}
             onToggle={() => onToggle(item.id)}
             onEdit={(t) => onEdit(item.id, t)}
             onRemove={() => onRemove(item.id)}
-            grip={gripFor(item, index)}
+            grip={scroll.gripFor(item.id, index)}
           />
         ))}
         {/* De invoerregel staat als laatste regel in het lijstje (F3, F15). */}
         <li
           ref={addRow}
           className={hidden.below > 0 ? 'item add-row covering' : 'item add-row'}
-          style={{ bottom: bottomHeight }}
+          style={{ bottom: scroll.bottomHeight }}
         >
-          {hidden.below > 0 && (
-            // De bovenrand van de invoerregel wordt een blauwe lijn met een lipje (F29).
-            <div className="more-items below">
-              <button
-                type="button"
-                aria-label={hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
-                onClick={() => scrollPage(1)}
-              >
-                <ChevronDown size={14} strokeWidth={2.5} aria-hidden />
-                {hidden.below}
-              </button>
-            </div>
-          )}
+          <MoreBelow count={hidden.below} words={['item', 'items']} onClick={() => scroll.scrollPage(1)} />
           <span className="item-grip" aria-hidden />
           <span className="item-check" aria-hidden>
             <span className="check" />

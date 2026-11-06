@@ -1,7 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Info as InfoIcon, Pencil, Plus, Settings as SettingsIcon, Trash2, Undo2 } from 'lucide-react'
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
-import { itemsText, MAX_LIJSTJES, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
+import type { Notice } from './ListView'
+import { itemsText, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
+import { MoreAbove, MoreBelow } from './MoreItems'
+import { useScrollList, type Grip } from './scrollList'
 
 // Zo lang (in milliseconden) kun je het weggooien van een lijstje ongedaan maken (F12).
 export const UNDO_MS = 10000
@@ -20,75 +23,155 @@ interface Props {
   onCreate: (naam: string) => void
   onRename: (id: string, naam: string) => void
   onDelete: (id: string) => Deleted | null
+  onMove: (from: number, to: number) => void
   onUndoDelete: (deleted: Deleted) => void
   onOpenInfo: () => void
   onOpenSettings: () => void
   install: { show: boolean; install: () => void; notNow: () => void }
+  /** Een lijstje dat net vanuit dat lijstje is weggegooid, om ongedaan te maken (F8, F12). */
+  justDeleted: Deleted | null
+  notice: Notice | null
+  onCloseNotice: () => void
+  mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
 
-/** Een naam invullen, met Annuleren en een knop om te bewaren; met de foutmelding eronder (F10, F11). */
-function NameForm({
-  label,
-  initial,
-  confirmLabel,
-  check,
-  onSave,
-  onCancel,
-}: {
-  label: string
-  initial: string
-  confirmLabel: string
+interface RowProps {
+  lijstje: Lijstje
+  current: boolean
+  editing: boolean
+  canDelete: boolean
+  style: CSSProperties | undefined
+  dragging: boolean
+  grip: Grip
   check: (naam: string) => string | null
-  onSave: (naam: string) => void
-  onCancel: () => void
-}) {
-  const [naam, setNaam] = useState(initial)
-  const [error, setError] = useState<string | null>(null)
+  onOpen: () => void
+  onStartEdit: () => void
+  onRename: (naam: string) => void
+  onStopEdit: () => void
+  onError: (error: string | null) => void
+  onDelete: () => void
+}
 
-  function submit(e: FormEvent) {
+/**
+ * Eén lijstje op Mijn lijstjes: vastpakken om te verplaatsen (F30), tikken om te openen (F9), het potlood om de naam
+ * te wijzigen (F11) en de prullenbak om weg te gooien (F12).
+ */
+function ListRow({
+  lijstje,
+  current,
+  editing,
+  canDelete,
+  style,
+  dragging,
+  grip,
+  check,
+  onOpen,
+  onStartEdit,
+  onRename,
+  onStopEdit,
+  onError,
+  onDelete,
+}: RowProps) {
+  const [naam, setNaam] = useState(lijstje.naam)
+  const open = openCount(lijstje)
+
+  /** Bewaart de nieuwe naam; bij een fout blijft het veld open met de melding onderaan (F11). */
+  function save(e: FormEvent) {
     e.preventDefault()
     const problem = check(naam)
     if (problem) {
-      setError(problem)
+      onError(problem)
       return
     }
-    onSave(naam.trim())
+    onError(null)
+    if (naam.trim() !== lijstje.naam) onRename(naam.trim())
+    onStopEdit()
   }
 
   return (
-    <form className="name-form" onSubmit={submit}>
-      <input
-        type="text"
-        aria-label={label}
-        value={naam}
-        maxLength={MAX_NAAM}
-        autoFocus
-        onChange={(e) => {
-          setNaam(e.target.value)
-          setError(null)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onCancel()
-        }}
-      />
-      <div className="confirm-buttons">
-        <button type="button" onClick={onCancel}>
-          Annuleren
+    <li
+      className={['item', 'list-row', current && 'current', dragging && 'dragging'].filter(Boolean).join(' ')}
+      data-id={lijstje.id}
+      style={style}
+    >
+      <button
+        type="button"
+        className="item-grip"
+        aria-label={`${lijstje.naam} verplaatsen`}
+        aria-description="Sleep omhoog of omlaag, of gebruik de pijltjestoetsen"
+        {...grip}
+      >
+        <GripVertical size={18} strokeWidth={1.75} aria-hidden />
+      </button>
+      {editing ? (
+        <form className="item-edit" onSubmit={save}>
+          <input
+            type="text"
+            aria-label={`Nieuwe naam voor ${lijstje.naam}`}
+            enterKeyHint="done"
+            autoComplete="off"
+            autoFocus
+            maxLength={MAX_NAAM}
+            value={naam}
+            onChange={(e) => {
+              setNaam(e.target.value)
+              onError(null)
+            }}
+            onBlur={() => {
+              // Weg uit het veld: een goede naam wordt bewaard, anders blijft de oude naam staan.
+              if (!check(naam) && naam.trim() !== lijstje.naam) onRename(naam.trim())
+              onError(null)
+              onStopEdit()
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                onError(null)
+                onStopEdit()
+              }
+            }}
+          />
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="list-open"
+          aria-label={open > 0 ? `${lijstje.naam}, ${open} open` : lijstje.naam}
+          aria-current={current ? 'true' : undefined}
+          onClick={onOpen}
+        >
+          <span className="list-name">{lijstje.naam}</span>
+          {open > 0 && (
+            <span className="count" aria-hidden>
+              {open}
+            </span>
+          )}
         </button>
-        <button type="submit" className="confirm-yes">
-          {confirmLabel}
-        </button>
-      </div>
-      {error && (
-        <p className="message error" role="alert">
-          {error}
-        </p>
       )}
-    </form>
+      <button
+        type="button"
+        className="item-delete"
+        aria-label={`Naam van ${lijstje.naam} wijzigen`}
+        onClick={() => {
+          setNaam(lijstje.naam)
+          onStartEdit()
+        }}
+      >
+        <Pencil size={18} strokeWidth={1.75} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="item-delete"
+        aria-label={`Lijstje ${lijstje.naam} weggooien`}
+        disabled={!canDelete}
+        onClick={onDelete}
+      >
+        <Trash2 size={18} strokeWidth={1.75} aria-hidden />
+      </button>
+    </li>
   )
 }
 
-/** Het hoofdscherm "Mijn lijstjes" (F9 t/m F12). */
+/** Het hoofdscherm "Mijn lijstjes" (F9 t/m F12, F30). */
 export default function Lists({
   lijstjes,
   huidig,
@@ -96,16 +179,25 @@ export default function Lists({
   onCreate,
   onRename,
   onDelete,
+  onMove,
   onUndoDelete,
   onOpenInfo,
   onOpenSettings,
   install,
+  justDeleted,
+  notice,
+  onCloseNotice,
+  mic,
 }: Props) {
-  const [creating, setCreating] = useState(false)
+  const [naam, setNaam] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
-  const [deleted, setDeleted] = useState<Deleted | null>(null)
+  // Een naam die niet kan (leeg of al bestaand), onderaan het scherm (F10, F11).
+  const [error, setError] = useState<string | null>(null)
+  const [deleted, setDeleted] = useState<Deleted | null>(justDeleted)
   // Een lijstje met items dat na bevestiging wordt weggegooid (F12).
   const [confirmDelete, setConfirmDelete] = useState<Lijstje | null>(null)
+  const scroll = useScrollList(lijstjes, onMove)
+  const { header, list, addRow, bottom, hidden } = scroll
 
   // De melding met Ongedaan maken verdwijnt na 10 seconden; dan is het weggooien definitief.
   useEffect(() => {
@@ -127,9 +219,20 @@ export default function Lists({
     if (editing === id) setEditing(null)
   }
 
+  /** Maakt een nieuw lijstje met de getypte naam (F10). */
+  function create(e: FormEvent) {
+    e.preventDefault()
+    const problem = nameError(lijstjes, naam)
+    if (problem) {
+      setError(problem)
+      return
+    }
+    onCreate(naam.trim())
+  }
+
   return (
     <main className="app lists-screen">
-      <header className="main-header">
+      <header ref={header} className="main-header">
         <h1>Mijn lijstjes</h1>
         <div className="header-actions">
           <button type="button" className="icon-button" aria-label="Informatie" onClick={onOpenInfo}>
@@ -141,135 +244,134 @@ export default function Lists({
         </div>
       </header>
 
-      <ul className="lists" aria-label="Mijn lijstjes">
-        {lijstjes.map((l) => {
-          const open = openCount(l)
-          return (
-            <li key={l.id} className={l.id === huidig ? 'list-row current' : 'list-row'}>
-              {editing === l.id ? (
-                <NameForm
-                  label={`Nieuwe naam voor ${l.naam}`}
-                  initial={l.naam}
-                  confirmLabel="Bewaren"
-                  check={(naam) => nameError(lijstjes, naam, l.id)}
-                  onSave={(naam) => {
-                    onRename(l.id, naam)
-                    setEditing(null)
-                  }}
-                  onCancel={() => setEditing(null)}
-                />
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="list-open"
-                    aria-label={open > 0 ? `${l.naam}, ${open} open` : l.naam}
-                    aria-current={l.id === huidig ? 'true' : undefined}
-                    onClick={() => onSelect(l.id)}
-                  >
-                    <span className="list-name">{l.naam}</span>
-                    {open > 0 && (
-                      <span className="count" aria-hidden>
-                        {open}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    aria-label={`Naam van ${l.naam} wijzigen`}
-                    onClick={() => {
-                      setEditing(l.id)
-                      setCreating(false)
-                    }}
-                  >
-                    <Pencil size={18} strokeWidth={1.75} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    aria-label={`Lijstje ${l.naam} weggooien`}
-                    disabled={lijstjes.length <= 1}
-                    onClick={() => askRemove(l)}
-                  >
-                    <Trash2 size={18} strokeWidth={1.75} aria-hidden />
-                  </button>
-                </>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      <MoreAbove
+        count={hidden.above}
+        words={['lijstje', 'lijstjes']}
+        headerHeight={scroll.headerHeight}
+        onClick={() => scroll.scrollPage(-1)}
+      />
 
-      {confirmDelete && (
-        <ConfirmDialog
-          title="Dit lijstje bevat items"
-          text={`${confirmDelete.naam} heeft ${itemsText(confirmDelete.items.length)}. Lijstje en items weggooien?`}
-          confirmLabel="Weggooien"
-          onCancel={() => setConfirmDelete(null)}
-          onConfirm={() => remove(confirmDelete.id)}
-        />
-      )}
-
-      {creating ? (
-        <NameForm
-          label="Naam van het nieuwe lijstje"
-          initial=""
-          confirmLabel="Maken"
-          check={(naam) => nameError(lijstjes, naam)}
-          onSave={(naam) => {
-            onCreate(naam)
-            setCreating(false)
-          }}
-          onCancel={() => setCreating(false)}
-        />
-      ) : lijstjes.length < MAX_LIJSTJES ? (
-        <button
-          type="button"
-          className="wide-button"
-          onClick={() => {
-            setCreating(true)
-            setEditing(null)
-          }}
+      <ul ref={list} className="items lists" aria-label="Mijn lijstjes" onTransitionEnd={scroll.measure}>
+        {lijstjes.map((l, index) => (
+          <ListRow
+            key={l.id}
+            lijstje={l}
+            current={l.id === huidig}
+            editing={editing === l.id}
+            canDelete={lijstjes.length > 1}
+            style={scroll.dragStyle(index)}
+            dragging={scroll.draggingId === l.id}
+            grip={scroll.gripFor(l.id, index)}
+            check={(n) => nameError(lijstjes, n, l.id)}
+            onOpen={() => onSelect(l.id)}
+            onStartEdit={() => {
+              setEditing(l.id)
+              setError(null)
+            }}
+            onRename={(n) => onRename(l.id, n)}
+            onStopEdit={() => setEditing(null)}
+            onError={setError}
+            onDelete={() => askRemove(l)}
+          />
+        ))}
+        {/* De invoerregel voor een nieuw lijstje staat als laatste regel, zoals bij items (F10). */}
+        <li
+          ref={addRow}
+          className={hidden.below > 0 ? 'item add-row covering' : 'item add-row'}
+          style={{ bottom: scroll.bottomHeight }}
         >
-          <Plus size={20} strokeWidth={1.75} aria-hidden />
-          Nieuw lijstje
-        </button>
-      ) : (
-        <p className="muted">Je hebt het maximum van {MAX_LIJSTJES} lijstjes.</p>
-      )}
-
-      {(deleted || install.show) && (
-        <div className="bottom">
-          {install.show && (
-            <section className="install" aria-label="App installeren">
-              <p>Lijstjes als app installeren?</p>
-              <button type="button" onClick={install.notNow}>
-                Niet nu
-              </button>
-              <button type="button" className="install-now" onClick={install.install}>
-                Installeren
-              </button>
-            </section>
-          )}
-          {deleted && (
-            <section className="voice" aria-live="polite">
-              <p role="status">Lijstje {deleted.lijstje.naam} weggegooid</p>
+          <MoreBelow count={hidden.below} words={['lijstje', 'lijstjes']} onClick={() => scroll.scrollPage(1)} />
+          <span className="item-grip" aria-hidden />
+          <form className="add-item" onSubmit={create}>
+            <input
+              type="text"
+              aria-label="Naam van het nieuwe lijstje"
+              placeholder="Nieuw lijstje"
+              enterKeyHint="go"
+              autoComplete="off"
+              maxLength={MAX_NAAM}
+              value={naam}
+              onChange={(e) => {
+                setNaam(e.target.value)
+                setError(null)
+              }}
+            />
+            {mic.show && (
+              // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
               <button
                 type="button"
-                className="undo-button"
-                onClick={() => {
-                  onUndoDelete(deleted)
-                  setDeleted(null)
-                }}
+                className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
+                aria-label={mic.listening ? 'Stoppen met luisteren' : 'Naam inspreken'}
+                aria-pressed={mic.listening}
+                onClick={mic.listening ? mic.stop : mic.start}
               >
-                <Undo2 size={18} strokeWidth={1.75} aria-hidden />
-                Ongedaan maken
+                <Mic size={16} strokeWidth={2} aria-hidden />
+              </button>
+            )}
+          </form>
+        </li>
+      </ul>
+
+      <div ref={bottom} className="bottom">
+        {confirmDelete && (
+          <ConfirmDialog
+            title="Dit lijstje bevat items"
+            text={`${confirmDelete.naam} heeft ${itemsText(confirmDelete.items.length)}. Lijstje en items weggooien?`}
+            confirmLabel="Weggooien"
+            onCancel={() => setConfirmDelete(null)}
+            onConfirm={() => remove(confirmDelete.id)}
+          />
+        )}
+        {mic.listening ? (
+          <section className="voice" aria-live="polite">
+            <p>
+              <strong>Luisteren…</strong> Zeg de naam van het nieuwe lijstje
+            </p>
+          </section>
+        ) : (
+          notice && (
+            <section className={notice.kind === 'error' ? 'voice error' : 'voice'} aria-live="polite">
+              <p role="status">{notice.text}</p>
+              <button type="button" className="voice-close" aria-label="Melding sluiten" onClick={onCloseNotice}>
+                <X size={18} strokeWidth={1.75} aria-hidden />
               </button>
             </section>
-          )}
-        </div>
-      )}
+          )
+        )}
+        {error && (
+          // Net als de meldingen op een lijstje (F5): onderaan, wit met een streep links.
+          <section className="voice error">
+            <p role="alert">{error}</p>
+          </section>
+        )}
+        {install.show && (
+          <section className="install" aria-label="App installeren">
+            <p>Lijstjes als app installeren?</p>
+            <button type="button" onClick={install.notNow}>
+              Niet nu
+            </button>
+            <button type="button" className="install-now" onClick={install.install}>
+              Installeren
+            </button>
+          </section>
+        )}
+        {deleted && (
+          <section className="voice" aria-live="polite">
+            <p role="status">Lijstje {deleted.lijstje.naam} weggegooid</p>
+            <button
+              type="button"
+              className="undo-button"
+              onClick={() => {
+                onUndoDelete(deleted)
+                setDeleted(null)
+              }}
+            >
+              <Undo2 size={18} strokeWidth={1.75} aria-hidden />
+              Ongedaan maken
+            </button>
+          </section>
+        )}
+      </div>
     </main>
   )
 }

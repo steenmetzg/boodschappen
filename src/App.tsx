@@ -9,6 +9,8 @@ import {
   editItem,
   loadCurrent,
   loadLijstjes,
+  move,
+  nameError,
   moveItem,
   newId,
   saveCurrent,
@@ -17,7 +19,7 @@ import {
   type Lijstje,
 } from './lists'
 import Settings from './Settings'
-import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, useSpeech } from './speech'
+import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, spokenName, useSpeech } from './speech'
 
 // Zo lang blijft een melding onderaan het lijstje staan, in milliseconden.
 const NOTICE_MS = 5000
@@ -29,10 +31,13 @@ export default function App() {
   // De app start met het laatst gebruikte lijstje, of met Mijn lijstjes als er nog geen is (F1).
   const [screen, setScreen] = useState<'lijst' | 'lijstjes' | 'settings' | 'info'>(() => (huidig ? 'lijst' : 'lijstjes'))
   const [notice, setNotice] = useState<Notice | null>(null)
+  // Een lijstje dat vanuit dat lijstje zelf is weggegooid; Mijn lijstjes toont dan Ongedaan maken (F8, F12).
+  const [justDeleted, setJustDeleted] = useState<Deleted | null>(null)
   const [speechEnabled, setSpeechEnabled] = useState(loadSpeechEnabled)
   const installPrompt = useInstallPrompt()
   const speech = useSpeech(
-    (alternatives) => addTexts(bestSpoken(alternatives), true),
+    // Op Mijn lijstjes is wat je zegt de naam van een nieuw lijstje (F31), op een lijstje zijn het items (F15).
+    (alternatives) => (screen === 'lijstjes' ? createSpoken(spokenName(alternatives)) : addTexts(bestSpoken(alternatives), true)),
     (text) => setNotice({ kind: 'error', text }),
   )
   const lijstje = lijstjes.find((l) => l.id === huidig) ?? lijstjes[0]
@@ -65,6 +70,7 @@ export default function App() {
   }
 
   function openList(id: string) {
+    setJustDeleted(null)
     setHuidig(id)
     setNotice(null)
     setScreen('lijst')
@@ -74,6 +80,13 @@ export default function App() {
     const id = newId()
     setLijstjes((all) => [...all, { id, naam, items: [] }])
     openList(id)
+  }
+
+  /** Maakt een lijstje met de ingesproken naam, of meldt waarom dat niet kan (F31). */
+  function createSpoken(naam: string) {
+    const problem = nameError(lijstjes, naam)
+    if (problem) setNotice({ kind: 'error', text: naam ? problem : 'Ik verstond geen naam. Probeer het opnieuw.' })
+    else create(naam)
   }
 
   function remove(id: string): Deleted | null {
@@ -124,10 +137,29 @@ export default function App() {
         onCreate={create}
         onRename={(id, naam) => update(id, (l) => ({ ...l, naam }))}
         onDelete={remove}
+        onMove={(from, to) => setLijstjes((all) => move(all, from, to))}
         onUndoDelete={undoRemove}
-        onOpenInfo={() => setScreen('info')}
-        onOpenSettings={() => setScreen('settings')}
+        onOpenInfo={() => {
+          setJustDeleted(null)
+          setScreen('info')
+        }}
+        onOpenSettings={() => {
+          setJustDeleted(null)
+          setScreen('settings')
+        }}
         install={installPrompt}
+        justDeleted={justDeleted}
+        notice={notice}
+        onCloseNotice={() => setNotice(null)}
+      mic={{
+        show: speechEnabled && speechSupported(),
+        listening: speech.listening,
+        start: () => {
+          setNotice(null)
+          speech.start()
+        },
+        stop: speech.stop,
+      }}
       />
     )
   }
@@ -150,6 +182,15 @@ export default function App() {
       onRemove={(id) => update(lijstje.id, (l) => ({ ...l, items: l.items.filter((i) => i.id !== id) }))}
       onClear={(which) =>
         update(lijstje.id, (l) => ({ ...l, items: which === 'alles' ? [] : l.items.filter((i) => !i.af) }))
+      }
+      onDeleteList={
+        lijstjes.length > 1
+          ? () => {
+              setNotice(null)
+              setJustDeleted(remove(lijstje.id))
+              setScreen('lijstjes')
+            }
+          : null
       }
       onBack={() => {
         setNotice(null)
