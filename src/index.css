@@ -684,7 +684,9 @@ h2 {
 }
 
 .clear-choice {
-  margin: 0 0 12px;
+  /* Onder de knoppen in de vaste titelbalk, over de hele breedte (F8). */
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
 }
 
 .clear-choice .confirm-buttons {

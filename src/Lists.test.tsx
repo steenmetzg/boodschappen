@@ -208,6 +208,14 @@ describe('AC7: lijstje leegmaken', () => {
     expect(title()).toHaveTextContent('Mijn 1e lijstje')
   })
 
+  it('staat in de vaste titelbalk, zodat hij ook in beeld is als je omlaag gescrold bent', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    const choice = await openClear(user)
+    expect(choice.closest('header')).toHaveClass('list-header')
+  })
+
   it('Annuleren laat alles staan', async () => {
     const user = userEvent.setup()
     render(<App />)

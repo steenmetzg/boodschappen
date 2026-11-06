@@ -379,24 +379,24 @@ export default function ListView({
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
+        {/* De keuze staat in de vaste titelbalk, zodat hij ook in beeld komt als je omlaag gescrold bent (F8). */}
+        {clearing && (
+          <section className="confirm clear-choice" aria-label="Lijstje leegmaken">
+            <strong>Lijstje {lijstje.naam} leegmaken</strong>
+            <div className="confirm-buttons">
+              <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
+                Afgevinkte weggooien
+              </button>
+              <button type="button" className="confirm-yes" onClick={() => clear('alles')}>
+                Alles weggooien
+              </button>
+              <button type="button" className="cancel" onClick={() => setClearing(false)}>
+                Annuleren
+              </button>
+            </div>
+          </section>
+        )}
       </header>
-
-      {clearing && (
-        <section className="confirm clear-choice" aria-label="Lijstje leegmaken">
-          <strong>Lijstje {lijstje.naam} leegmaken</strong>
-          <div className="confirm-buttons">
-            <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
-              Afgevinkte weggooien
-            </button>
-            <button type="button" className="confirm-yes" onClick={() => clear('alles')}>
-              Alles weggooien
-            </button>
-            <button type="button" className="cancel" onClick={() => setClearing(false)}>
-              Annuleren
-            </button>
-          </div>
-        </section>
-      )}
 
       {hidden.above > 0 && (
         // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
