@@ -194,6 +194,8 @@ export default function ListView({
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
   const [drag, setDrag] = useState<Drag | null>(null)
+  const dragging = useRef(false)
+  dragging.current = drag !== null
   // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
   const [moved, setMoved] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
@@ -216,6 +218,8 @@ export default function ListView({
 
   /** Kijkt welke items buiten beeld staan, na elke wijziging, bij scrollen en als het scherm verandert (F29). */
   function measure() {
+    // Tijdens het verslepen staan regels tijdelijk verschoven; dan niet tellen (F28, F29).
+    if (dragging.current) return
     const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
     const rects = Array.from(rows, (row) => row.getBoundingClientRect())
     const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
@@ -371,7 +375,13 @@ export default function ListView({
         </div>
       )}
 
-      <ul ref={list} className="items" aria-label={`Items op ${lijstje.naam}`}>
+      <ul
+        ref={list}
+        className="items"
+        aria-label={`Items op ${lijstje.naam}`}
+        // Na verplaatsen schuiven de regels nog even naar hun plek; daarna opnieuw tellen (F29).
+        onTransitionEnd={measure}
+      >
         {items.map((item, index) => (
           <ItemRow
             key={item.id}

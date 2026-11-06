@@ -587,6 +587,32 @@ describe('AC22: items buiten beeld', () => {
     expect(scrollBy).not.toHaveBeenCalled()
   })
 
+  it('telt een versleept item niet als buiten beeld, ook niet terwijl de regels nog naar hun plek schuiven', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    // Nagebootst: alles in beeld, behalve een regel die (nog) verschoven staat, die staat boven het scherm.
+    let shifted = true
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 400, bottom: 450 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      if (i === -1) return { top: 0, bottom: 0, height: 0 } as DOMRect
+      if (shifted && this.textContent?.includes('kaas')) return { top: -100, bottom: -50, height: 50 } as DOMRect
+      return { top: 100 + i * 50, bottom: 150 + i * 50, height: 50 } as DOMRect
+    })
+    const grip = screen.getByRole('button', { name: 'kaas verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 200 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 50 })
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 50 })
+    expect(itemTexts()).toEqual(['kaas', 'melk', 'brood'])
+    // Klaar met schuiven: de regels staan op hun plek en er staat niets buiten beeld.
+    shifted = false
+    fireEvent.transitionEnd(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' }))
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
+  })
+
   it('toont geen pijltjes als alles in beeld is', async () => {
     const user = userEvent.setup()
     render(<App />)
