@@ -1,6 +1,14 @@
-import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
-import { ArrowLeft, Check, Mic, Plus, Trash2, X } from 'lucide-react'
-import { MAX_TEKST, type Item, type Lijstje } from './lists'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type TouchEvent,
+} from 'react'
+import { ArrowLeft, Check, GripVertical, Mic, Plus, Trash2, X } from 'lucide-react'
+import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
 const SWIPE_DELETE = 80
@@ -15,18 +23,53 @@ interface Props {
   onCloseNotice: () => void
   onAdd: (text: string) => void
   onToggle: (id: string) => void
+  onEdit: (id: string, text: string) => void
   onRemove: (id: string) => void
+  onMove: (from: number, to: number) => void
   onClear: (which: 'af' | 'alles') => void
   onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
 
-/** Eén item: tik om af te vinken (F6), kruisje of naar links vegen om weg te gooien (F7). */
-function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => void; onRemove: () => void }) {
+/** Een item dat je aan het verslepen bent (F28). */
+interface Drag {
+  id: string
+  from: number
+  to: number
+  dy: number
+  startY: number
+  heights: number[]
+}
+
+interface RowProps {
+  item: Item
+  /** Hoeveel pixels de regel omhoog of omlaag staat tijdens het verslepen. */
+  shift: number
+  dragging: boolean
+  onToggle: () => void
+  onEdit: (text: string) => void
+  onRemove: () => void
+  grip: {
+    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => void
+    onPointerMove: (e: PointerEvent<HTMLButtonElement>) => void
+    onPointerUp: () => void
+    onPointerCancel: () => void
+    onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
+  }
+}
+
+/**
+ * Eén item: vastpakken om te verplaatsen (F28), het rondje om af te vinken (F6), de tekst om aan te passen (F27),
+ * het kruisje of naar links vegen om weg te gooien (F7).
+ */
+function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip }: RowProps) {
   const [dx, setDx] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(item.tekst)
   const touch = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
 
   function onTouchStart(e: TouchEvent) {
+    if (editing) return
     const t = e.touches[0]
     touch.current = { x: t.clientX, y: t.clientY, dir: null }
   }
@@ -51,10 +94,31 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
     if (swiped) onRemove()
   }
 
+  function startEditing() {
+    setText(item.tekst)
+    setEditing(true)
+  }
+
+  function save(e?: FormEvent) {
+    e?.preventDefault()
+    if (!editing) return
+    setEditing(false)
+    if (text.trim() !== item.tekst) onEdit(text)
+  }
+
+  const style = dx
+    ? { transform: `translateX(${dx}px)`, transition: 'none' }
+    : dragging
+      ? { transform: `translateY(${shift}px)`, transition: 'none' }
+      : shift
+        ? { transform: `translateY(${shift}px)` }
+        : undefined
+
   return (
     <li
-      className={item.af ? 'item done' : 'item'}
-      style={dx ? { transform: `translateX(${dx}px)`, transition: 'none' } : undefined}
+      className={['item', item.af && 'done', dragging && 'dragging'].filter(Boolean).join(' ')}
+      data-id={item.id}
+      style={style}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -63,12 +127,44 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
         setDx(0)
       }}
     >
-      <button type="button" className="item-toggle" aria-pressed={item.af} onClick={onToggle}>
+      <button
+        type="button"
+        className="item-grip"
+        aria-label={`${item.tekst} verplaatsen`}
+        aria-description="Sleep omhoog of omlaag, of gebruik de pijltjestoetsen"
+        // Vastpakken is geen vegen om weg te gooien.
+        onTouchStart={(e) => e.stopPropagation()}
+        {...grip}
+      >
+        <GripVertical size={18} strokeWidth={1.75} aria-hidden />
+      </button>
+      <button type="button" className="item-check" aria-label={item.tekst} aria-pressed={item.af} onClick={onToggle}>
         <span className="check" aria-hidden>
           {item.af && <Check size={16} strokeWidth={2.5} />}
         </span>
-        <span className="item-text">{item.tekst}</span>
       </button>
+      {editing ? (
+        <form className="item-edit" onSubmit={save}>
+          <input
+            type="text"
+            aria-label="Item aanpassen"
+            enterKeyHint="done"
+            autoComplete="off"
+            autoFocus
+            maxLength={MAX_TEKST}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => save()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setEditing(false)
+            }}
+          />
+        </form>
+      ) : (
+        <button type="button" className="item-text" aria-label={`${item.tekst} aanpassen`} onClick={startEditing}>
+          {item.tekst}
+        </button>
+      )}
       <button type="button" className="item-delete" aria-label={`${item.tekst} weggooien`} onClick={onRemove}>
         <X size={18} strokeWidth={1.75} aria-hidden />
       </button>
@@ -76,34 +172,91 @@ function ItemRow({ item, onToggle, onRemove }: { item: Item; onToggle: () => voi
   )
 }
 
-/** Het scherm van één lijstje (F1 t/m F8, F15). */
+/** Het scherm van één lijstje (F1 t/m F8, F15, F27, F28). */
 export default function ListView({
   lijstje,
   notice,
   onCloseNotice,
   onAdd,
   onToggle,
+  onEdit,
   onRemove,
+  onMove,
   onClear,
   onBack,
   mic,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
+  const [drag, setDrag] = useState<Drag | null>(null)
+  // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
+  const [moved, setMoved] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
-  const hasDone = lijstje.items.some((i) => i.af)
+  const list = useRef<HTMLUListElement>(null)
+  const items = lijstje.items
+  const hasDone = items.some((i) => i.af)
+
+  useEffect(() => {
+    if (!moved) return
+    list.current?.querySelector<HTMLElement>(`li[data-id="${moved}"] .item-grip`)?.focus()
+  }, [moved, items])
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (text.trim()) onAdd(text)
     setText('')
-    // Het veld blijft geselecteerd, zodat je meteen het volgende item typt (F3).
+    // Het veld blijft geselecteerd en in beeld, zodat je meteen het volgende item typt (F3).
     input.current?.focus()
+    requestAnimationFrame(() => input.current?.scrollIntoView?.({ block: 'nearest' }))
   }
 
   function clear(which: 'af' | 'alles') {
     onClear(which)
     setClearing(false)
+  }
+
+  function gripFor(item: Item, index: number): RowProps['grip'] {
+    return {
+      onPointerDown(e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return
+        e.preventDefault()
+        e.currentTarget.setPointerCapture?.(e.pointerId)
+        const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
+        const heights = Array.from(rows, (row) => row.getBoundingClientRect().height)
+        setDrag({ id: item.id, from: index, to: index, dy: 0, startY: e.clientY, heights })
+      },
+      onPointerMove(e) {
+        if (!drag || drag.id !== item.id) return
+        const dy = e.clientY - drag.startY
+        setDrag({ ...drag, dy, to: dropIndex(drag.from, dy, drag.heights) })
+      },
+      onPointerUp() {
+        if (!drag) return
+        setDrag(null)
+        if (drag.to !== drag.from) onMove(drag.from, drag.to)
+      },
+      onPointerCancel() {
+        setDrag(null)
+      },
+      onKeyDown(e) {
+        const to = e.key === 'ArrowUp' ? index - 1 : e.key === 'ArrowDown' ? index + 1 : null
+        if (to === null) return
+        e.preventDefault()
+        if (to < 0 || to >= items.length) return
+        setMoved(item.id)
+        onMove(index, to)
+      },
+    }
+  }
+
+  /** Hoe ver een regel opzij schuift tijdens het verslepen, om plaats te maken voor het versleepte item. */
+  function shiftFor(index: number): number {
+    if (!drag) return 0
+    if (index === drag.from) return drag.dy
+    const h = drag.heights[drag.from] ?? 0
+    if (drag.from < index && index <= drag.to) return -h
+    if (drag.to <= index && index < drag.from) return h
+    return 0
   }
 
   return (
@@ -119,7 +272,7 @@ export default function ListView({
             className="icon-button"
             aria-label="Lijstje leegmaken"
             aria-expanded={clearing}
-            disabled={lijstje.items.length === 0}
+            disabled={items.length === 0}
             onClick={() => setClearing(!clearing)}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
@@ -144,15 +297,60 @@ export default function ListView({
         </section>
       )}
 
-      {lijstje.items.length === 0 ? (
-        <p className="muted empty">Nog niets op dit lijstje. Typ of spreek hieronder een item in.</p>
-      ) : (
-        <ul className="items" aria-label={`Items op ${lijstje.naam}`}>
-          {lijstje.items.map((item) => (
-            <ItemRow key={item.id} item={item} onToggle={() => onToggle(item.id)} onRemove={() => onRemove(item.id)} />
-          ))}
-        </ul>
-      )}
+      <ul ref={list} className="items" aria-label={`Items op ${lijstje.naam}`}>
+        {items.map((item, index) => (
+          <ItemRow
+            key={item.id}
+            item={item}
+            shift={shiftFor(index)}
+            dragging={drag?.id === item.id}
+            onToggle={() => onToggle(item.id)}
+            onEdit={(t) => onEdit(item.id, t)}
+            onRemove={() => onRemove(item.id)}
+            grip={gripFor(item, index)}
+          />
+        ))}
+        {/* De invoerregel staat als laatste regel in het lijstje (F3, F15). */}
+        <li className="item add-row">
+          <span className="item-grip" aria-hidden />
+          <span className="item-check" aria-hidden>
+            <span className="check" />
+          </span>
+          <form className="add-item" onSubmit={submit}>
+            <input
+              ref={input}
+              type="text"
+              aria-label="Item toevoegen"
+              placeholder="Item toevoegen"
+              enterKeyHint="enter"
+              autoComplete="off"
+              maxLength={MAX_TEKST * 10}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button
+              type="submit"
+              className="icon-button add"
+              aria-label="Toevoegen"
+              // Het toetsenbord blijft open als je op de plusknop tikt.
+              onPointerDown={(e) => e.preventDefault()}
+            >
+              <Plus size={20} strokeWidth={1.75} aria-hidden />
+            </button>
+            {mic.show && (
+              <button
+                type="button"
+                className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
+                aria-label={mic.listening ? 'Stoppen met luisteren' : 'Inspreken'}
+                aria-pressed={mic.listening}
+                onClick={mic.listening ? mic.stop : mic.start}
+              >
+                <Mic size={18} strokeWidth={1.75} aria-hidden />
+              </button>
+            )}
+          </form>
+        </li>
+      </ul>
 
       <div className="bottom">
         {mic.listening ? (
@@ -171,39 +369,6 @@ export default function ListView({
             </section>
           )
         )}
-        <form className="add-item" onSubmit={submit}>
-          <input
-            ref={input}
-            type="text"
-            aria-label="Item toevoegen"
-            placeholder="Item toevoegen"
-            enterKeyHint="enter"
-            autoComplete="off"
-            maxLength={MAX_TEKST * 10}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="icon-button add"
-            aria-label="Toevoegen"
-            // Het toetsenbord blijft open als je op de plusknop tikt.
-            onPointerDown={(e) => e.preventDefault()}
-          >
-            <Plus size={20} strokeWidth={1.75} aria-hidden />
-          </button>
-          {mic.show && (
-            <button
-              type="button"
-              className={mic.listening ? 'icon-button mic listening' : 'icon-button mic'}
-              aria-label={mic.listening ? 'Stoppen met luisteren' : 'Inspreken'}
-              aria-pressed={mic.listening}
-              onClick={mic.listening ? mic.stop : mic.start}
-            >
-              <Mic size={20} strokeWidth={1.75} aria-hidden />
-            </button>
-          )}
-        </form>
       </div>
     </main>
   )

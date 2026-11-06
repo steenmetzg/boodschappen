@@ -8,10 +8,12 @@ export function itemTexts(): string[] {
   if (!list) return []
   return within(list)
     .getAllByRole('listitem')
+    // De laatste regel is de invoerregel, geen item.
+    .filter((li) => !li.classList.contains('add-row'))
     .map((li) => li.querySelector('.item-text')?.textContent ?? '')
 }
 
-/** De knop om een item af te vinken (de tekst met het rondje). */
+/** De knop om een item af te vinken (het rondje). */
 export function itemButton(tekst: string): HTMLElement {
   return screen.getByRole('button', { name: tekst })
 }

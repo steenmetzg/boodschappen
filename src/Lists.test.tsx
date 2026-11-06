@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { CURRENT_KEY, LISTS_KEY } from './lists'
+import { CURRENT_KEY, dropIndex, LISTS_KEY } from './lists'
 import { itemButton, itemTexts, list, rememberFirstList, storeLists, typeItem } from './test/helpers'
 
 vi.mock('./folderStore', () => ({
@@ -34,8 +34,11 @@ describe('AC1: eerste keer openen', () => {
     expect(screen.getByRole('button', { name: 'Instellingen en backup' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mijn 1e lijstje' }))
     expect(title()).toHaveTextContent('Mijn 1e lijstje')
-    expect(screen.getByText('Nog niets op dit lijstje. Typ of spreek hieronder een item in.')).toBeInTheDocument()
     expect(itemTexts()).toEqual([])
+    // Een leeg lijstje heeft alleen de invoerregel.
+    const rows = within(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' })).getAllByRole('listitem')
+    expect(rows).toHaveLength(1)
+    expect(within(rows[0]).getByRole('textbox', { name: 'Item toevoegen' })).toBeInTheDocument()
   })
 })
 
@@ -401,5 +404,120 @@ describe('AC12: onthouden', () => {
     storeLists([list('a', 'AH'), list('b', 'Klussen')], 'weg')
     render(<App />)
     expect(title()).toHaveTextContent('AH')
+  })
+})
+
+describe('AC2: de invoerregel staat in het lijstje', () => {
+  it('is de laatste regel, met een rondje dat nog niet werkt en de microfoon rechts', async () => {
+    const user = userEvent.setup()
+    ;(window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition = class {}
+    render(<App />)
+    await typeItem(user, 'melk')
+    const rows = within(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' })).getAllByRole('listitem')
+    const last = rows[rows.length - 1]
+    expect(within(last).getByRole('textbox', { name: 'Item toevoegen' })).toBeInTheDocument()
+    const buttons = within(last).getAllByRole('button')
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Toevoegen', 'Inspreken'])
+    delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition
+  })
+})
+
+describe('AC20: item aanpassen', () => {
+  it('maakt van de tekst een tekstveld als je erop tikt; Enter bewaart, op dezelfde plek', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    const field = screen.getByRole('textbox', { name: 'Item aanpassen' })
+    expect(field).toHaveValue('melk')
+    expect(field).toHaveFocus()
+    await user.clear(field)
+    await user.type(field, 'halfvolle melk{Enter}')
+    expect(itemTexts()).toEqual(['halfvolle melk', 'brood'])
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)[0].items[0].tekst).toBe('halfvolle melk')
+  })
+
+  it('bewaart ook als je ergens anders tikt, en Escape laat de tekst zoals hij was', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.type(screen.getByRole('textbox', { name: 'Item aanpassen' }), 'poeder{Escape}')
+    expect(itemTexts()).toEqual(['melk'])
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.type(screen.getByRole('textbox', { name: 'Item aanpassen' }), 'poeder')
+    await user.click(title())
+    expect(itemTexts()).toEqual(['melkpoeder'])
+  })
+
+  it('laat het item staan bij een lege tekst, en meldt een tekst die er al op staat', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.clear(screen.getByRole('textbox', { name: 'Item aanpassen' }))
+    await user.keyboard('{Enter}')
+    expect(itemTexts()).toEqual(['melk', 'brood'])
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    await user.clear(screen.getByRole('textbox', { name: 'Item aanpassen' }))
+    await user.keyboard('Brood{Enter}')
+    expect(itemTexts()).toEqual(['melk', 'brood'])
+    expect(screen.getByRole('status')).toHaveTextContent('Brood staat er al op.')
+  })
+
+  it('laat afvinken met het rondje en weggooien met het kruisje gewoon werken', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    await user.click(itemButton('melk'))
+    expect(itemButton('melk')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('textbox', { name: 'Item aanpassen' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'melk weggooien' }))
+    expect(itemTexts()).toEqual([])
+  })
+})
+
+describe('AC21: items verplaatsen', () => {
+  it('berekent de nieuwe plek uit hoe ver je sleept', () => {
+    const heights = [48, 48, 48, 48]
+    expect(dropIndex(0, 0, heights)).toBe(0)
+    expect(dropIndex(0, 30, heights)).toBe(0)
+    expect(dropIndex(0, 50, heights)).toBe(1)
+    expect(dropIndex(0, 100, heights)).toBe(2)
+    expect(dropIndex(3, -500, heights)).toBe(0)
+    expect(dropIndex(2, -20, heights)).toBe(2)
+  })
+
+  it('verplaatst een item door de greep vast te pakken en te slepen', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 48 } as DOMRect)
+    const grip = screen.getByRole('button', { name: 'melk verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 100 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 160 })
+    expect(grip.closest('li')).toHaveClass('dragging')
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 160 })
+    vi.restoreAllMocks()
+    expect(itemTexts()).toEqual(['brood', 'melk', 'kaas'])
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)[0].items.map((i: { tekst: string }) => i.tekst)).toEqual([
+      'brood',
+      'melk',
+      'kaas',
+    ])
+  })
+
+  it('verplaatst ook met de pijltjestoetsen, en houdt afgevinkte items afgevinkt', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    await user.click(itemButton('kaas'))
+    screen.getByRole('button', { name: 'kaas verplaatsen' }).focus()
+    await user.keyboard('{ArrowUp}{ArrowUp}{ArrowUp}')
+    expect(itemTexts()).toEqual(['kaas', 'melk', 'brood'])
+    expect(screen.getByRole('button', { name: 'kaas verplaatsen' })).toHaveFocus()
+    expect(itemButton('kaas')).toHaveAttribute('aria-pressed', 'true')
+    await user.keyboard('{ArrowDown}')
+    expect(itemTexts()).toEqual(['melk', 'kaas', 'brood'])
   })
 })

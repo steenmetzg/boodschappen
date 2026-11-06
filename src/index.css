@@ -434,16 +434,86 @@ h2 {
   border-bottom: none;
 }
 
-.item-toggle {
+/* Greep om een item vast te pakken en te verplaatsen (F28). */
+.item-grip {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 48px;
+  margin-left: 2px;
+  border: none;
+  color: #b3b9c4;
+  cursor: grab;
+  /* Slepen met de vinger mag de pagina niet laten scrollen. */
+  touch-action: none;
+}
+
+.item.dragging {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.16);
+}
+
+.item.dragging .item-grip {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+/* Het rondje om af te vinken, met een aanraakgebied van 44 pixels (F6). */
+.item-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 48px;
+  border: none;
+}
+
+/* De tekst: tik om aan te passen (F27). */
+.item-text {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: none;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.item-edit {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 6px 4px 6px 14px;
-  border: none;
-  text-align: left;
+}
+
+.item-edit input,
+.add-row .add-item input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  margin: 4px 0;
+  padding: 0 8px;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.item-edit input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+/* De invoerregel onderaan het lijstje: een rondje dat (nog) niet werkt (F3). */
+.add-row {
+  padding-right: 6px;
+}
+
+.add-row .item-check .check {
+  border-style: dashed;
 }
 
 /* Het rondje om af te vinken (F6); afgevinkt blauw met een wit vinkje. */
@@ -464,11 +534,6 @@ h2 {
   border-color: var(--accent);
 }
 
-.item-text {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 .item.done .item-text {
   color: var(--muted);
   text-decoration: line-through;
@@ -485,13 +550,14 @@ h2 {
   color: var(--muted);
 }
 
-/* Tekstveld met plusknop en microfoon, altijd onderaan in beeld (F3, F15). */
+/* Tekstveld met plusknop en microfoon, als laatste regel van het lijstje (F3, F15). */
 .add-item {
+  flex: 1;
   /* Zonder min-width 0 duwt het tekstveld de microfoon buiten het scherm. */
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .add-item input,
@@ -516,12 +582,15 @@ h2 {
 
 .add-item .add {
   color: var(--accent);
+  background: transparent;
+  box-shadow: none;
 }
 
-/* De microfoon: rond en gevuld blauw, zoals in WoonWerk. */
+/* De microfoon: rond en gevuld blauw, zoals in WoonWerk, rechts op de regel waar bij een item het kruisje staat. */
 .add-item .mic {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  margin: 0 2px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: var(--shadow-accent);

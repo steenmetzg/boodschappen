@@ -140,7 +140,7 @@ export default function Settings({ lijstjes, huidig, speechEnabled, onChangeSpee
       {speechSupported() && (
         <section className="setting">
           <h2>Spraak</h2>
-          <p className="muted">Met de microfoonknop naast het tekstveld spreek je items in. Werkt alleen met internet.</p>
+          <p className="muted">Met de microfoonknop rechts op de onderste regel van een lijstje spreek je items in. Werkt alleen met internet.</p>
           <div className="modes single" role="group" aria-label="Spraak">
             <button
               type="button"

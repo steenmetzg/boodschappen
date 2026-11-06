@@ -6,8 +6,10 @@ import ListView, { type Notice } from './ListView'
 import {
   addItems,
   addMessage,
+  editItem,
   loadCurrent,
   loadLijstjes,
+  moveItem,
   newId,
   saveCurrent,
   saveLijstjes,
@@ -139,6 +141,12 @@ export default function App() {
       onCloseNotice={() => setNotice(null)}
       onAdd={(text) => addTexts(splitTyped(text), false)}
       onToggle={(id) => update(lijstje.id, (l) => ({ ...l, items: l.items.map((i) => (i.id === id ? { ...i, af: !i.af } : i)) }))}
+      onEdit={(id, text) => {
+        const result = editItem(lijstje, id, text)
+        update(lijstje.id, () => result.lijstje)
+        setNotice(result.error ? { kind: 'error', text: result.error } : null)
+      }}
+      onMove={(from, to) => update(lijstje.id, (l) => moveItem(l, from, to))}
       onRemove={(id) => update(lijstje.id, (l) => ({ ...l, items: l.items.filter((i) => i.id !== id) }))}
       onClear={(which) =>
         update(lijstje.id, (l) => ({ ...l, items: which === 'alles' ? [] : l.items.filter((i) => !i.af) }))
