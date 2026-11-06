@@ -33,6 +33,10 @@ describe('AC19: past op een telefoon', () => {
     expect(header).toContain('background: var(--bg);')
   })
 
+  it('laat de pagina niet meeveren als je voorbij het begin of eind veegt', () => {
+    expect(rule('html,\nbody')).toContain('overscroll-behavior-y: none;')
+  })
+
   it('heeft aanraakgebieden van minstens 44 pixels voor afvinken, aanpassen en weggooien', () => {
     expect(rule('.item-check')).toContain('width: 44px;')
     expect(rule('.item-check')).toContain('height: 48px;')

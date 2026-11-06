@@ -23,6 +23,15 @@
   box-sizing: border-box;
 }
 
+/*
+ * Geen meeveren of uitrekken van de pagina als je voorbij het begin of eind veegt (Android), en geen
+ * "omlaag trekken om te verversen": past alles op het scherm, dan beweegt er niets (F29).
+ */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   background: var(--bg);
