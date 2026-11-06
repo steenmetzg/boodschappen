@@ -21,6 +21,8 @@ interface Props {
   onRemove: (id: string) => void
   onMove: (from: number, to: number) => void
   onClear: (which: 'af' | 'alles') => void
+  /** Gooit de items én het lijstje zelf weg; `null` als dit het laatste lijstje is (F8). */
+  onDeleteList: (() => void) | null
   onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
 }
@@ -161,6 +163,7 @@ export default function ListView({
   onRemove,
   onMove,
   onClear,
+  onDeleteList,
   onBack,
   mic,
 }: Props) {
@@ -198,7 +201,7 @@ export default function ListView({
             className="icon-button"
             aria-label="Lijstje leegmaken"
             aria-expanded={clearing}
-            disabled={items.length === 0}
+            disabled={items.length === 0 && !onDeleteList}
             onClick={() => setClearing(!clearing)}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
@@ -212,8 +215,11 @@ export default function ListView({
               <button type="button" disabled={!hasDone} onClick={() => clear('af')}>
                 Afgevinkte weggooien
               </button>
-              <button type="button" className="confirm-yes" onClick={() => clear('alles')}>
+              <button type="button" disabled={items.length === 0} onClick={() => clear('alles')}>
                 Alles weggooien
+              </button>
+              <button type="button" className="confirm-yes wide" disabled={!onDeleteList} onClick={() => onDeleteList?.()}>
+                Items én het lijstje weggooien
               </button>
               <button type="button" className="cancel" onClick={() => setClearing(false)}>
                 Annuleren

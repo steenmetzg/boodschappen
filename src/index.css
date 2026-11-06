@@ -693,6 +693,7 @@ h2 {
   grid-template-columns: 1fr 1fr;
 }
 
+.clear-choice .confirm-buttons .wide,
 .clear-choice .confirm-buttons .cancel {
   grid-column: 1 / -1;
 }

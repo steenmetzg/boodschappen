@@ -28,6 +28,8 @@ interface Props {
   onOpenInfo: () => void
   onOpenSettings: () => void
   install: { show: boolean; install: () => void; notNow: () => void }
+  /** Een lijstje dat net vanuit dat lijstje is weggegooid, om ongedaan te maken (F8, F12). */
+  justDeleted: Deleted | null
   notice: Notice | null
   onCloseNotice: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
@@ -182,6 +184,7 @@ export default function Lists({
   onOpenInfo,
   onOpenSettings,
   install,
+  justDeleted,
   notice,
   onCloseNotice,
   mic,
@@ -190,7 +193,7 @@ export default function Lists({
   const [editing, setEditing] = useState<string | null>(null)
   // Een naam die niet kan (leeg of al bestaand), onderaan het scherm (F10, F11).
   const [error, setError] = useState<string | null>(null)
-  const [deleted, setDeleted] = useState<Deleted | null>(null)
+  const [deleted, setDeleted] = useState<Deleted | null>(justDeleted)
   // Een lijstje met items dat na bevestiging wordt weggegooid (F12).
   const [confirmDelete, setConfirmDelete] = useState<Lijstje | null>(null)
   const scroll = useScrollList(lijstjes, onMove)

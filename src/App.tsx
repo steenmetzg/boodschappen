@@ -31,6 +31,8 @@ export default function App() {
   // De app start met het laatst gebruikte lijstje, of met Mijn lijstjes als er nog geen is (F1).
   const [screen, setScreen] = useState<'lijst' | 'lijstjes' | 'settings' | 'info'>(() => (huidig ? 'lijst' : 'lijstjes'))
   const [notice, setNotice] = useState<Notice | null>(null)
+  // Een lijstje dat vanuit dat lijstje zelf is weggegooid; Mijn lijstjes toont dan Ongedaan maken (F8, F12).
+  const [justDeleted, setJustDeleted] = useState<Deleted | null>(null)
   const [speechEnabled, setSpeechEnabled] = useState(loadSpeechEnabled)
   const installPrompt = useInstallPrompt()
   const speech = useSpeech(
@@ -68,6 +70,7 @@ export default function App() {
   }
 
   function openList(id: string) {
+    setJustDeleted(null)
     setHuidig(id)
     setNotice(null)
     setScreen('lijst')
@@ -136,9 +139,16 @@ export default function App() {
         onDelete={remove}
         onMove={(from, to) => setLijstjes((all) => move(all, from, to))}
         onUndoDelete={undoRemove}
-        onOpenInfo={() => setScreen('info')}
-        onOpenSettings={() => setScreen('settings')}
+        onOpenInfo={() => {
+          setJustDeleted(null)
+          setScreen('info')
+        }}
+        onOpenSettings={() => {
+          setJustDeleted(null)
+          setScreen('settings')
+        }}
         install={installPrompt}
+        justDeleted={justDeleted}
         notice={notice}
         onCloseNotice={() => setNotice(null)}
       mic={{
@@ -172,6 +182,15 @@ export default function App() {
       onRemove={(id) => update(lijstje.id, (l) => ({ ...l, items: l.items.filter((i) => i.id !== id) }))}
       onClear={(which) =>
         update(lijstje.id, (l) => ({ ...l, items: which === 'alles' ? [] : l.items.filter((i) => !i.af) }))
+      }
+      onDeleteList={
+        lijstjes.length > 1
+          ? () => {
+              setNotice(null)
+              setJustDeleted(remove(lijstje.id))
+              setScreen('lijstjes')
+            }
+          : null
       }
       onBack={() => {
         setNotice(null)

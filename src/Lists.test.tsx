@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -219,6 +219,36 @@ describe('AC7: lijstje leegmaken', () => {
     await typeItem(user, 'melk')
     const choice = await openClear(user)
     expect(choice.closest('header')).toHaveClass('list-header')
+  })
+
+  it('Items én het lijstje weggooien gooit het hele lijstje weg, gaat naar Mijn lijstjes en kan ongedaan worden', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk', ['brood', true]]), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await user.click(
+      within(await openClear(user)).getByRole('button', { name: 'Items én het lijstje weggooien' }),
+    )
+    expect(title()).toHaveTextContent('Mijn lijstjes')
+    expect(listNames()).toEqual(['Klussen'])
+    expect(screen.getByRole('status')).toHaveTextContent('Lijstje AH weggegooid')
+    await user.click(screen.getByRole('button', { name: 'Ongedaan maken' }))
+    expect(listNames()).toEqual(['AH', 'Klussen'])
+    expect(screen.getByRole('button', { name: 'AH, 1 open' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('kan het laatste lijstje niet weggooien, maar een leeg lijstje wel als er meer zijn', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    expect(within(await openClear(user)).getByRole('button', { name: 'Items én het lijstje weggooien' })).toBeDisabled()
+    cleanup()
+    storeLists([list('l1', 'AH'), list('b', 'Klussen')], 'l1')
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Lijstje leegmaken' })).toBeEnabled()
+    const choice = await openClear(user)
+    expect(within(choice).getByRole('button', { name: 'Alles weggooien' })).toBeDisabled()
+    await user.click(within(choice).getByRole('button', { name: 'Items én het lijstje weggooien' }))
+    expect(listNames()).toEqual(['Klussen'])
   })
 
   it('Annuleren laat alles staan', async () => {
