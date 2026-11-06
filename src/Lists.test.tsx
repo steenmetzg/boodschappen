@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -519,6 +519,33 @@ describe('AC21: items verplaatsen', () => {
     ])
   })
 
+  it('scrolt mee als je een item tot bij de titel of de invoerregel sleept', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    // Nagebootst: de titelbalk eindigt op 100 pixels, de invoerregel begint op 500 pixels.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 500, bottom: 550 } as DOMRect
+      if (this.classList.contains('list-header')) return { top: 0, bottom: 100 } as DOMRect
+      return { top: 200, bottom: 250, height: 50 } as DOMRect
+    })
+    const scrollBy = vi.fn()
+    window.scrollBy = scrollBy as unknown as typeof window.scrollBy
+    const grip = screen.getByRole('button', { name: 'kaas verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 300 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 110 })
+    await waitFor(() => expect(scrollBy).toHaveBeenCalledWith(0, expect.any(Number)))
+    expect(scrollBy.mock.calls[0][1]).toBeLessThan(0)
+    scrollBy.mockClear()
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 490 })
+    await waitFor(() => expect(scrollBy).toHaveBeenCalled())
+    expect(scrollBy.mock.calls.at(-1)![1]).toBeGreaterThan(0)
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 490 })
+    scrollBy.mockClear()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(scrollBy).not.toHaveBeenCalled()
+  })
+
   it('verplaatst ook met de pijltjestoetsen, en houdt afgevinkte items afgevinkt', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -585,6 +612,32 @@ describe('AC22: items buiten beeld', () => {
     scrollBy.mockClear()
     await user.click(screen.getByRole('button', { name: 'a weggooien' }))
     expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  it('telt een versleept item niet als buiten beeld, ook niet terwijl de regels nog naar hun plek schuiven', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    // Nagebootst: alles in beeld, behalve een regel die (nog) verschoven staat, die staat boven het scherm.
+    let shifted = true
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 400, bottom: 450 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      if (i === -1) return { top: 0, bottom: 0, height: 0 } as DOMRect
+      if (shifted && this.textContent?.includes('kaas')) return { top: -100, bottom: -50, height: 50 } as DOMRect
+      return { top: 100 + i * 50, bottom: 150 + i * 50, height: 50 } as DOMRect
+    })
+    const grip = screen.getByRole('button', { name: 'kaas verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 200 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 50 })
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 50 })
+    expect(itemTexts()).toEqual(['kaas', 'melk', 'brood'])
+    // Klaar met schuiven: de regels staan op hun plek en er staat niets buiten beeld.
+    shifted = false
+    fireEvent.transitionEnd(screen.getByRole('list', { name: 'Items op Mijn 1e lijstje' }))
+    expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
   })
 
   it('toont geen pijltjes als alles in beeld is', async () => {
