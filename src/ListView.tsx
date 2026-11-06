@@ -332,9 +332,14 @@ export default function ListView({
       )}
 
       {hidden.above > 0 && (
-        <button type="button" className="more-items above" onClick={() => scrollPage(-1)}>
-          <ChevronUp size={16} strokeWidth={2} aria-hidden />
-          {hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
+        <button
+          type="button"
+          className="more-items above"
+          aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
+          onClick={() => scrollPage(-1)}
+        >
+          <ChevronUp size={14} strokeWidth={2} aria-hidden />
+          {hidden.above}
         </button>
       )}
 
@@ -358,9 +363,14 @@ export default function ListView({
           style={{ bottom: bottomHeight }}
         >
           {hidden.below > 0 && (
-            <button type="button" className="more-items below" onClick={() => scrollPage(1)}>
-              <ChevronDown size={16} strokeWidth={2} aria-hidden />
-              {hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
+            <button
+              type="button"
+              className="more-items below"
+              aria-label={hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
+              onClick={() => scrollPage(1)}
+            >
+              <ChevronDown size={14} strokeWidth={2} aria-hidden />
+              {hidden.below}
             </button>
           )}
           <span className="item-grip" aria-hidden />

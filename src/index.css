@@ -529,14 +529,15 @@ h2 {
 .more-items {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px 6px 8px;
+  gap: 2px;
+  padding: 2px 8px 2px 5px;
   border: none;
   border-radius: 999px;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 0.875rem;
-  box-shadow: var(--shadow-accent);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: var(--shadow);
   white-space: nowrap;
 }
 
@@ -550,7 +551,7 @@ h2 {
 
 .more-items.below {
   position: absolute;
-  top: -44px;
+  top: -30px;
   left: 50%;
   transform: translateX(-50%);
 }
