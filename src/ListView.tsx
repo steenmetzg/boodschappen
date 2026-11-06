@@ -332,15 +332,17 @@ export default function ListView({
       )}
 
       {hidden.above > 0 && (
-        <button
-          type="button"
-          className="more-items above"
-          aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
-          onClick={() => scrollPage(-1)}
-        >
-          <ChevronUp size={14} strokeWidth={2} aria-hidden />
-          {hidden.above}
-        </button>
+        // Een blauwe lijn bovenaan het scherm met een lipje met het pijltje en het aantal (F29).
+        <div className="more-items above">
+          <button
+            type="button"
+            aria-label={hidden.above === 1 ? '1 item hoger' : `${hidden.above} items hoger`}
+            onClick={() => scrollPage(-1)}
+          >
+            <ChevronUp size={14} strokeWidth={2.5} aria-hidden />
+            {hidden.above}
+          </button>
+        </div>
       )}
 
       <ul ref={list} className="items" aria-label={`Items op ${lijstje.naam}`}>
@@ -363,15 +365,17 @@ export default function ListView({
           style={{ bottom: bottomHeight }}
         >
           {hidden.below > 0 && (
-            <button
-              type="button"
-              className="more-items below"
-              aria-label={hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
-              onClick={() => scrollPage(1)}
-            >
-              <ChevronDown size={14} strokeWidth={2} aria-hidden />
-              {hidden.below}
-            </button>
+            // De bovenrand van de invoerregel wordt een blauwe lijn met een lipje (F29).
+            <div className="more-items below">
+              <button
+                type="button"
+                aria-label={hidden.below === 1 ? '1 item lager' : `${hidden.below} items lager`}
+                onClick={() => scrollPage(1)}
+              >
+                <ChevronDown size={14} strokeWidth={2.5} aria-hidden />
+                {hidden.below}
+              </button>
+            </div>
           )}
           <span className="item-grip" aria-hidden />
           <span className="item-check" aria-hidden>

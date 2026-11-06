@@ -525,35 +525,59 @@ h2 {
   box-shadow: 0 -6px 12px -6px rgba(16, 24, 40, 0.18);
 }
 
-/* Pijltje met het aantal items boven of onder het scherm (F29). */
+/*
+ * Staan er items boven of onder het scherm, dan wordt de rand een blauwe lijn
+ * met een lipje waarin het pijltje en het aantal staan (F29).
+ */
 .more-items {
+  height: 2px;
+  background: var(--accent);
+}
+
+.more-items button {
+  position: absolute;
+  left: 50%;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 8px 2px 5px;
+  min-height: 22px;
+  padding: 0 10px 0 7px;
   border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--accent);
-  font-size: 0.75rem;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.8125rem;
   font-weight: 600;
-  box-shadow: var(--shadow);
+  line-height: 1;
   white-space: nowrap;
+  transform: translateX(-50%);
 }
 
+/* Bovenaan het scherm, zo breed als het lijstje; het lipje hangt eronder. */
 .more-items.above {
   position: fixed;
   z-index: 3;
-  top: max(8px, env(safe-area-inset-top));
+  top: env(safe-area-inset-top, 0px);
   left: 50%;
+  width: min(calc(100vw - 32px), 448px);
   transform: translateX(-50%);
 }
 
+.more-items.above button {
+  top: 100%;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Op de bovenrand van de invoerregel; het lipje steekt erboven uit. */
 .more-items.below {
   position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -1px;
+  left: 0;
+  right: 0;
+}
+
+.more-items.below button {
+  bottom: 0;
+  border-radius: 8px 8px 0 0;
 }
 
 .add-row .item-check .check {
