@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -517,6 +517,33 @@ describe('AC21: items verplaatsen', () => {
       'melk',
       'kaas',
     ])
+  })
+
+  it('scrolt mee als je een item tot bij de titel of de invoerregel sleept', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk, brood, kaas')
+    // Nagebootst: de titelbalk eindigt op 100 pixels, de invoerregel begint op 500 pixels.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 500, bottom: 550 } as DOMRect
+      if (this.classList.contains('list-header')) return { top: 0, bottom: 100 } as DOMRect
+      return { top: 200, bottom: 250, height: 50 } as DOMRect
+    })
+    const scrollBy = vi.fn()
+    window.scrollBy = scrollBy as unknown as typeof window.scrollBy
+    const grip = screen.getByRole('button', { name: 'kaas verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 300 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 110 })
+    await waitFor(() => expect(scrollBy).toHaveBeenCalledWith(0, expect.any(Number)))
+    expect(scrollBy.mock.calls[0][1]).toBeLessThan(0)
+    scrollBy.mockClear()
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 490 })
+    await waitFor(() => expect(scrollBy).toHaveBeenCalled())
+    expect(scrollBy.mock.calls.at(-1)![1]).toBeGreaterThan(0)
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 490 })
+    scrollBy.mockClear()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(scrollBy).not.toHaveBeenCalled()
   })
 
   it('verplaatst ook met de pijltjestoetsen, en houdt afgevinkte items afgevinkt', async () => {

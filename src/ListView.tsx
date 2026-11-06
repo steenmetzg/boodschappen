@@ -43,7 +43,20 @@ interface Drag {
   to: number
   dy: number
   startY: number
+  /** Hoe ver de pagina gescrold was bij het vastpakken; het lijstje scrolt mee tijdens het slepen. */
+  startScroll: number
   heights: number[]
+}
+
+/** Zo dicht (in pixels) bij de boven- of onderrand scrolt het lijstje mee tijdens het slepen (F28). */
+const EDGE_ZONE = 56
+/** Zo snel (in pixels per beeldje) scrolt het lijstje hoogstens mee tijdens het slepen. */
+const EDGE_SPEED = 14
+
+/** De nieuwe stand van een versleept item, voor de vinger op hoogte `pointerY` (F28). */
+function dragTo(drag: Drag, pointerY: number): Drag {
+  const dy = pointerY - drag.startY + window.scrollY - drag.startScroll
+  return { ...drag, dy, to: dropIndex(drag.from, dy, drag.heights) }
 }
 
 interface RowProps {
@@ -194,8 +207,32 @@ export default function ListView({
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
   const [drag, setDrag] = useState<Drag | null>(null)
-  const dragging = useRef(false)
-  dragging.current = drag !== null
+  // Waar de vinger is tijdens het slepen, voor het meescrollen bij de rand (F28).
+  const pointerY = useRef(0)
+  const dragId = drag?.id
+
+  // Sleep je een item tot bij de titel of de invoerregel, dan scrolt het lijstje mee, zodat je het
+  // ook naar items buiten beeld kunt verplaatsen (F28).
+  useEffect(() => {
+    if (!dragId) return
+    let frame = 0
+    function step() {
+      const top = header.current?.getBoundingClientRect().bottom ?? 0
+      const bottom = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
+      const y = pointerY.current
+      let speed = 0
+      if (y < top + EDGE_ZONE) speed = -EDGE_SPEED * Math.min(1, (top + EDGE_ZONE - y) / EDGE_ZONE)
+      else if (y > bottom - EDGE_ZONE) speed = EDGE_SPEED * Math.min(1, (y - bottom + EDGE_ZONE) / EDGE_ZONE)
+      if (speed !== 0) {
+        const before = window.scrollY
+        window.scrollBy(0, speed)
+        if (window.scrollY !== before) setDrag((d) => (d ? dragTo(d, y) : d))
+      }
+      frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [dragId])
   // Het item dat met de pijltjestoetsen is verplaatst; de focus blijft op dat item.
   const [moved, setMoved] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Hidden>({ above: 0, below: 0 })
@@ -218,9 +255,8 @@ export default function ListView({
 
   /** Kijkt welke items buiten beeld staan, na elke wijziging, bij scrollen en als het scherm verandert (F29). */
   function measure() {
-    // Tijdens het verslepen staan regels tijdelijk verschoven; dan niet tellen (F28, F29).
-    if (dragging.current) return
-    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
+    // Het item dat je versleept, telt niet mee: dat is altijd onder je vinger (F28, F29).
+    const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]:not(.dragging)') ?? []
     const rects = Array.from(rows, (row) => row.getBoundingClientRect())
     const limit = addRow.current?.getBoundingClientRect().top ?? window.innerHeight
     // Staat de grijze lijn met het lipje bovenaan in beeld, dan telt alles daarachter als buiten beeld.
@@ -287,12 +323,13 @@ export default function ListView({
         e.currentTarget.setPointerCapture?.(e.pointerId)
         const rows = list.current?.querySelectorAll<HTMLElement>('li[data-id]') ?? []
         const heights = Array.from(rows, (row) => row.getBoundingClientRect().height)
-        setDrag({ id: item.id, from: index, to: index, dy: 0, startY: e.clientY, heights })
+        pointerY.current = e.clientY
+        setDrag({ id: item.id, from: index, to: index, dy: 0, startY: e.clientY, startScroll: window.scrollY, heights })
       },
       onPointerMove(e) {
         if (!drag || drag.id !== item.id) return
-        const dy = e.clientY - drag.startY
-        setDrag({ ...drag, dy, to: dropIndex(drag.from, dy, drag.heights) })
+        pointerY.current = e.clientY
+        setDrag(dragTo(drag, e.clientY))
       },
       onPointerUp() {
         if (!drag) return
