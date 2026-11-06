@@ -380,20 +380,20 @@ h2 {
 
 /* Titelbalk van Mijn lijstjes: de titel met rechts de informatieknop en het tandwiel. */
 .main-header {
-  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
 }
 
 /* Titelbalk van een lijstje: links de terugknop naar Mijn lijstjes, dan de naam van het lijstje, rechts de knoppen. */
 .list-header {
-  display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.main-header,
+.list-header {
+  display: grid;
   align-items: center;
   gap: 8px;
-  /* De titelbalk blijft bovenaan staan; alleen de items scrollen eronder door. */
+  /* De titelbalk blijft bovenaan staan; alleen de regels scrollen eronder door (F29, F30). */
   position: sticky;
   z-index: 4;
   top: 0;
@@ -403,6 +403,7 @@ h2 {
   background: var(--bg);
 }
 
+.main-header h1,
 .list-header h1 {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -644,8 +645,7 @@ h2 {
   gap: 2px;
 }
 
-.add-item input,
-.name-form input {
+.add-item input {
   flex: 1;
   min-width: 0;
   min-height: 44px;
@@ -658,8 +658,7 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.add-item input:focus-visible,
-.name-form input:focus-visible {
+.add-item input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -703,23 +702,10 @@ h2 {
   cursor: default;
 }
 
-/* Mijn lijstjes (F9 t/m F12). */
-.lists {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.list-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.list-row .icon-button {
-  color: var(--muted);
+/* Mijn lijstjes (F9 t/m F12, F30): de lijstjes in één wit vlak, net als de items van een lijstje. */
+.list-row .item-delete:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .list-open {
@@ -729,18 +715,29 @@ h2 {
   align-items: center;
   gap: 8px;
   min-height: 48px;
-  padding: 0 12px;
-  border: 1px solid transparent;
-  border-left: 5px solid transparent;
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  padding: 6px 4px 6px 8px;
+  border: none;
   text-align: left;
 }
 
 /* Het huidige lijstje heeft een blauwe streep links. */
-.list-row.current .list-open {
-  border-left-color: var(--accent);
+.list-row.current {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.list-row.current.dragging {
+  box-shadow: inset 4px 0 0 var(--accent), 0 6px 18px rgba(16, 24, 40, 0.16);
+}
+
+.list-row .item-edit input {
+  margin-left: 4px;
+}
+
+/* Kan er geen lijstje meer bij, dan staat dat op de plek van het tekstveld (F10). */
+.max-lists {
+  flex: 1;
+  margin: 0;
+  padding: 12px 8px;
 }
 
 .list-name {
@@ -749,20 +746,6 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.list-row .name-form {
-  flex: 1;
-}
-
-.name-form {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.name-form .message {
-  margin-top: 4px;
 }
 
 .undo-button {
@@ -779,5 +762,10 @@ h2 {
 }
 
 .lists-screen .confirm {
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+/* Op Mijn lijstjes staat geen microfoon rechts op de invoerregel. */
+.lists-screen .add-item {
+  padding-right: 8px;
 }

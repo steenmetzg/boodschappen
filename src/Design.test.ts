@@ -17,7 +17,7 @@ describe('AC19: past op een telefoon', () => {
     expect(rule('.app')).toContain('max-width: 480px;')
     expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
     expect(rule('.item-text')).toContain('overflow-wrap: anywhere;')
-    expect(rule('.list-header h1')).toContain('text-overflow: ellipsis;')
+    expect(rule('.main-header h1,\n.list-header h1')).toContain('text-overflow: ellipsis;')
   })
 
   it('houdt het tekstveld onderaan in beeld, ook met het toetsenbord open', () => {
@@ -26,10 +26,11 @@ describe('AC19: past op een telefoon', () => {
     expect(rule('.app.list-screen,\n.app.lists-screen')).toContain('min-height: 100dvh;')
   })
 
-  it('houdt de titelbalk van een lijstje bovenaan in beeld; alleen de items scrollen', () => {
-    expect(rule('.list-header')).toContain('position: sticky;')
-    expect(rule('.list-header')).toContain('top: 0;')
-    expect(rule('.list-header')).toContain('background: var(--bg);')
+  it('houdt de titelbalk van een lijstje en van Mijn lijstjes bovenaan in beeld; alleen de regels scrollen', () => {
+    const header = rule('.main-header,\n.list-header')
+    expect(header).toContain('position: sticky;')
+    expect(header).toContain('top: 0;')
+    expect(header).toContain('background: var(--bg);')
   })
 
   it('heeft aanraakgebieden van minstens 44 pixels voor afvinken, aanpassen en weggooien', () => {

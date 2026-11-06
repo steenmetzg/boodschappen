@@ -21,6 +21,11 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** De namen van de lijstjes op Mijn lijstjes, van boven naar beneden. */
+function listNames(): string[] {
+  return Array.from(document.querySelectorAll('.list-row .list-name'), (el) => el.textContent ?? '')
+}
+
 function title() {
   return screen.getByRole('heading', { level: 1 })
 }
@@ -239,11 +244,16 @@ async function openMyLists(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('AC8: lijstje maken', () => {
-  it('maakt een nieuw lijstje en toont het meteen', async () => {
+  it('maakt een nieuw lijstje met de invoerregel onderaan en toont het meteen', async () => {
     const user = userEvent.setup()
     render(<App />)
     await openMyLists(user)
-    await user.click(screen.getByRole('button', { name: 'Nieuw lijstje' }))
+    const rows = within(screen.getByRole('list', { name: 'Mijn lijstjes' })).getAllByRole('listitem')
+    expect(rows.at(-1)).toContainElement(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }))
+    expect(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' })).toHaveAttribute(
+      'placeholder',
+      'Nieuw lijstje',
+    )
     await user.type(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }), 'AH{Enter}')
     expect(title()).toHaveTextContent('AH')
     expect(itemTexts()).toEqual([])
@@ -254,23 +264,12 @@ describe('AC8: lijstje maken', () => {
     storeLists([list('a', 'AH'), list('b', 'Klussen')])
     render(<App />)
     await openMyLists(user)
-    await user.click(screen.getByRole('button', { name: 'Nieuw lijstje' }))
-    await user.click(screen.getByRole('button', { name: 'Maken' }))
+    const field = screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' })
+    await user.type(field, '{Enter}')
     expect(screen.getByRole('alert')).toHaveTextContent('Geef het lijstje een naam.')
-    await user.type(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }), ' ah ')
-    await user.click(screen.getByRole('button', { name: 'Maken' }))
+    await user.type(field, ' ah {Enter}')
     expect(screen.getByRole('alert')).toHaveTextContent('Er is al een lijstje AH.')
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
-  })
-
-  it('Annuleren maakt niets', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-    await openMyLists(user)
-    await user.click(screen.getByRole('button', { name: 'Nieuw lijstje' }))
-    await user.type(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }), 'AH')
-    await user.click(screen.getByRole('button', { name: 'Annuleren' }))
-    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(listNames()).toEqual(['AH', 'Klussen'])
   })
 })
 
@@ -327,8 +326,7 @@ describe('AC10: lijstje weggooien', () => {
     expect(screen.queryByRole('button', { name: /^AH/ })).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Lijstje AH weggegooid')
     await user.click(screen.getByRole('button', { name: 'Ongedaan maken' }))
-    const names = screen.getAllByRole('listitem').map((li) => li.querySelector('.list-name')?.textContent)
-    expect(names).toEqual(['AH', 'Klussen', 'Vakantie'])
+    expect(listNames()).toEqual(['AH', 'Klussen', 'Vakantie'])
     expect(screen.getByRole('button', { name: 'AH, 1 open' })).toHaveAttribute('aria-current', 'true')
     await user.click(screen.getByRole('button', { name: 'AH, 1 open' }))
     expect(title()).toHaveTextContent('AH')
@@ -377,7 +375,7 @@ describe('AC11: een lijstje openen vanaf Mijn lijstjes', () => {
     storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen', ['lamp', ['kraan', true], 'deur'])], 'a')
     render(<App />)
     await openMyLists(user)
-    const current = screen.getByRole('button', { name: /^AH/ })
+    const current = screen.getByRole('button', { name: 'AH, 1 open' })
     expect(current).toHaveAttribute('aria-current', 'true')
     expect(screen.getByRole('button', { name: 'Klussen, 2 open' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Klussen, 2 open' }))
@@ -407,7 +405,6 @@ describe('AC12: onthouden', () => {
     const user = userEvent.setup()
     const { unmount } = render(<App />)
     await openMyLists(user)
-    await user.click(screen.getByRole('button', { name: 'Nieuw lijstje' }))
     await user.type(screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' }), 'Klussen{Enter}')
     await typeItem(user, 'lamp, kraan')
     await user.click(itemButton('kraan'))
@@ -653,5 +650,64 @@ describe('AC22: items buiten beeld', () => {
     render(<App />)
     await typeItem(user, 'melk, brood')
     expect(screen.queryByRole('button', { name: /hoger|lager/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('AC23: Mijn lijstjes werkt net als een lijstje', () => {
+  it('verplaatst een lijstje door de greep vast te pakken en te slepen, en onthoudt de volgorde', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH'), list('b', 'Klussen'), list('c', 'Vakantie')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 48 } as DOMRect)
+    const grip = screen.getByRole('button', { name: 'AH verplaatsen' })
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 100 })
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: 160 })
+    expect(grip.closest('li')).toHaveClass('dragging')
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: 160 })
+    vi.restoreAllMocks()
+    expect(listNames()).toEqual(['Klussen', 'AH', 'Vakantie'])
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!).map((l: { naam: string }) => l.naam)).toEqual([
+      'Klussen',
+      'AH',
+      'Vakantie',
+    ])
+  })
+
+  it('verplaatst ook met de pijltjestoetsen', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH'), list('b', 'Klussen'), list('c', 'Vakantie')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    screen.getByRole('button', { name: 'Vakantie verplaatsen' }).focus()
+    await user.keyboard('{ArrowUp}{ArrowUp}')
+    expect(listNames()).toEqual(['Vakantie', 'AH', 'Klussen'])
+    expect(screen.getByRole('button', { name: 'Vakantie verplaatsen' })).toHaveFocus()
+  })
+
+  it('toont een lipje met het aantal lijstjes boven en onder het scherm', async () => {
+    const user = userEvent.setup()
+    storeLists(['a', 'b', 'c', 'd', 'e', 'f'].map((n) => list(n, n.toUpperCase())), 'a')
+    render(<App />)
+    await openMyLists(user)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('add-row')) return { top: 150, bottom: 200 } as DOMRect
+      const rows = Array.from(document.querySelectorAll('li[data-id]'))
+      const i = rows.indexOf(this)
+      if (i === -1) return { top: 0, bottom: 0, height: 0 } as DOMRect
+      return { top: i * 50 - 100, bottom: i * 50 - 50, height: 50 } as DOMRect
+    })
+    fireEvent.scroll(window)
+    expect(screen.getByRole('button', { name: '2 lijstjes hoger' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '1 lijstje lager' })).toBeInTheDocument()
+  })
+
+  it('vraagt bevestiging onderaan in beeld, ook als je omlaag gescrold bent', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk']), list('b', 'Klussen')], 'a')
+    render(<App />)
+    await openMyLists(user)
+    await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
+    expect(screen.getByRole('alertdialog').closest('.bottom')).not.toBeNull()
   })
 })

@@ -204,13 +204,19 @@ export function editItem(lijstje: Lijstje, id: string, tekst: string): EditResul
   return { lijstje: { ...lijstje, items: lijstje.items.map((i) => (i.id === id ? { ...i, tekst: nieuw } : i)) }, error: null }
 }
 
+/** Verplaatst het element op plek `from` naar plek `to`; bij een ongeldige plek blijft alles hetzelfde (F28, F30). */
+export function move<T>(list: readonly T[], from: number, to: number): T[] {
+  const copy = [...list]
+  if (from < 0 || from >= copy.length || to < 0 || to >= copy.length || from === to) return copy
+  const [moved] = copy.splice(from, 1)
+  copy.splice(to, 0, moved)
+  return copy
+}
+
 /** Verplaatst het item op plek `from` naar plek `to` (F28). */
 export function moveItem(lijstje: Lijstje, from: number, to: number): Lijstje {
-  const items = [...lijstje.items]
-  if (from < 0 || from >= items.length || to < 0 || to >= items.length || from === to) return lijstje
-  const [item] = items.splice(from, 1)
-  items.splice(to, 0, item)
-  return { ...lijstje, items }
+  if (from < 0 || from >= lijstje.items.length || to < 0 || to >= lijstje.items.length || from === to) return lijstje
+  return { ...lijstje, items: move(lijstje.items, from, to) }
 }
 
 /**

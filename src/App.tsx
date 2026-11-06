@@ -9,6 +9,7 @@ import {
   editItem,
   loadCurrent,
   loadLijstjes,
+  move,
   moveItem,
   newId,
   saveCurrent,
@@ -124,6 +125,7 @@ export default function App() {
         onCreate={create}
         onRename={(id, naam) => update(id, (l) => ({ ...l, naam }))}
         onDelete={remove}
+        onMove={(from, to) => setLijstjes((all) => move(all, from, to))}
         onUndoDelete={undoRemove}
         onOpenInfo={() => setScreen('info')}
         onOpenSettings={() => setScreen('settings')}
