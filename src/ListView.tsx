@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type TouchEvent,
 } from 'react'
-import { ArrowLeft, Check, GripVertical, Mic, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
 import { dropIndex, MAX_TEKST, type Item, type Lijstje } from './lists'
 
 // Zo ver (in pixels) veeg je een item naar links om het weg te gooien (F7).
@@ -328,15 +328,6 @@ export default function ListView({
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
-            <button
-              type="submit"
-              className="icon-button add"
-              aria-label="Toevoegen"
-              // Het toetsenbord blijft open als je op de plusknop tikt.
-              onPointerDown={(e) => e.preventDefault()}
-            >
-              <Plus size={20} strokeWidth={1.75} aria-hidden />
-            </button>
             {mic.show && (
               <button
                 type="button"
@@ -345,7 +336,7 @@ export default function ListView({
                 aria-pressed={mic.listening}
                 onClick={mic.listening ? mic.stop : mic.start}
               >
-                <Mic size={18} strokeWidth={1.75} aria-hidden />
+                <Mic size={16} strokeWidth={2} aria-hidden />
               </button>
             )}
           </form>

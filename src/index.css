@@ -509,7 +509,7 @@ h2 {
 
 /* De invoerregel onderaan het lijstje: een rondje dat (nog) niet werkt (F3). */
 .add-row {
-  padding-right: 6px;
+  padding-right: 0;
 }
 
 .add-row .item-check .check {
@@ -580,17 +580,12 @@ h2 {
   outline-offset: 1px;
 }
 
-.add-item .add {
-  color: var(--accent);
-  background: transparent;
-  box-shadow: none;
-}
-
 /* De microfoon: rond en gevuld blauw, zoals in WoonWerk, rechts op de regel waar bij een item het kruisje staat. */
 .add-item .mic {
-  width: 40px;
-  height: 40px;
-  margin: 0 2px;
+  width: 32px;
+  height: 32px;
+  /* Samen met de rand een aanraakgebied van 44 pixels, op de plek van het kruisje. */
+  margin: 0 6px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: var(--shadow-accent);

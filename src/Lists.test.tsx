@@ -54,14 +54,12 @@ describe('AC2: item typen', () => {
     expect(field).toHaveFocus()
   })
 
-  it('werkt ook met de plusknop, en een leeg veld doet niets', async () => {
+  it('heeft geen plusknop, en Enter in een leeg veld doet niets', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('button', { name: 'Toevoegen' }))
+    expect(screen.queryByRole('button', { name: 'Toevoegen' })).not.toBeInTheDocument()
+    await typeItem(user, '   ')
     expect(itemTexts()).toEqual([])
-    await user.type(screen.getByRole('textbox', { name: 'Item toevoegen' }), 'kaas')
-    await user.click(screen.getByRole('button', { name: 'Toevoegen' }))
-    expect(itemTexts()).toEqual(['kaas'])
   })
 })
 
@@ -408,7 +406,7 @@ describe('AC12: onthouden', () => {
 })
 
 describe('AC2: de invoerregel staat in het lijstje', () => {
-  it('is de laatste regel, met een rondje dat nog niet werkt en de microfoon rechts', async () => {
+  it('is de laatste regel, met een rondje dat nog niet werkt, geen plusknop en de microfoon rechts', async () => {
     const user = userEvent.setup()
     ;(window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition = class {}
     render(<App />)
@@ -417,7 +415,7 @@ describe('AC2: de invoerregel staat in het lijstje', () => {
     const last = rows[rows.length - 1]
     expect(within(last).getByRole('textbox', { name: 'Item toevoegen' })).toBeInTheDocument()
     const buttons = within(last).getAllByRole('button')
-    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Toevoegen', 'Inspreken'])
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Inspreken'])
     delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition
   })
 })
