@@ -1,0 +1,126 @@
+import { useEffect, useRef, useState } from 'react'
+import { MAX_TEKST } from './lists'
+
+// Inspreken (F15): met de microfoonknop zeg je bijvoorbeeld "melk, brood en twee pakken koffie".
+// Alles van de spraakbediening staat in dit bestand, zodat het makkelijk weer weg kan.
+// Het luisteren zelf (useSpeech) komt uit WoonWerk.
+
+/** Een ingesproken zin wordt opgesplitst bij "en", "komma" en komma's; de eerste letter wordt een kleine letter. */
+export function splitSpoken(text: string): string[] {
+  return text
+    .split(/,|\s+(?:en|komma)\s+/i)
+    .map((t) => t.replace(/[.!?]+$/, '').trim())
+    .map((t) => t.replace(/^(?:en|komma)\s+/i, '').replace(/\s+(?:en|komma)$/i, '').trim())
+    .filter((t) => t.length > 0 && !/^(en|komma)$/i.test(t))
+    .map((t) => (t.charAt(0).toLocaleLowerCase('nl') + t.slice(1)).slice(0, MAX_TEKST).trim())
+}
+
+interface RecognitionResultList {
+  length: number
+  [index: number]: { length: number; [index: number]: { transcript: string } }
+}
+
+interface Recognition {
+  lang: string
+  interimResults: boolean
+  maxAlternatives: number
+  continuous: boolean
+  onresult: ((event: { results: RecognitionResultList }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+  start(): void
+  abort(): void
+}
+
+type RecognitionConstructor = new () => Recognition
+
+function recognitionConstructor(): RecognitionConstructor | null {
+  const w = window as unknown as { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor }
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+}
+
+/** Kan deze browser spraak herkennen? Zo niet, dan is er geen microfoonknop. */
+export function speechSupported(): boolean {
+  return recognitionConstructor() !== null
+}
+
+const ERRORS: Record<string, string> = {
+  'not-allowed': 'Lijstjes mag de microfoon niet gebruiken. Geef toestemming in Chrome en probeer het opnieuw.',
+  'service-not-allowed': 'Lijstjes mag de microfoon niet gebruiken. Geef toestemming in Chrome en probeer het opnieuw.',
+  network: 'Spraakherkenning werkt alleen met internet. Probeer het later opnieuw.',
+  'no-speech': 'Ik hoorde niets. Tik op de microfoon en probeer het opnieuw.',
+  'audio-capture': 'Er is geen microfoon gevonden.',
+}
+
+export const SPEECH_KEY = 'lijstjes-spraak-aan'
+
+/** Staat de microfoonknop aan in de instellingen (F30)? Standaard wel. */
+export function loadSpeechEnabled(): boolean {
+  try {
+    return localStorage.getItem(SPEECH_KEY) !== 'nee'
+  } catch {
+    return true
+  }
+}
+
+export function saveSpeechEnabled(on: boolean): void {
+  try {
+    if (on) localStorage.removeItem(SPEECH_KEY)
+    else localStorage.setItem(SPEECH_KEY, 'nee')
+  } catch {
+    // Opslag niet beschikbaar; de instelling geldt dan alleen zolang de app open is.
+  }
+}
+
+/**
+ * Luisteren met de microfoon. `onHeard` krijgt de mogelijke zinnen (beste eerst),
+ * `onError` een foutmelding in gewone taal.
+ */
+export function useSpeech(onHeard: (alternatives: string[]) => void, onError: (message: string) => void) {
+  const [listening, setListening] = useState(false)
+  const recognition = useRef<Recognition | null>(null)
+  const handlers = useRef({ onHeard, onError })
+  useEffect(() => {
+    handlers.current = { onHeard, onError }
+  })
+
+  useEffect(() => () => recognition.current?.abort(), [])
+
+  function start() {
+    const Ctor = recognitionConstructor()
+    if (!Ctor || recognition.current) return
+    const r = new Ctor()
+    r.lang = 'nl-NL'
+    r.interimResults = false
+    r.maxAlternatives = 3
+    r.continuous = false
+    r.onresult = (event) => {
+      const result = event.results[0]
+      const alternatives: string[] = []
+      for (let i = 0; result && i < result.length; i++) alternatives.push(result[i].transcript)
+      if (alternatives.length > 0) handlers.current.onHeard(alternatives)
+    }
+    r.onerror = (event) => {
+      if (event.error !== 'aborted') handlers.current.onError(ERRORS[event.error] ?? 'Spraakherkenning lukte niet. Probeer het opnieuw.')
+    }
+    r.onend = () => {
+      recognition.current = null
+      setListening(false)
+    }
+    recognition.current = r
+    setListening(true)
+    try {
+      r.start()
+    } catch {
+      recognition.current = null
+      setListening(false)
+      handlers.current.onError('Spraakherkenning lukte niet. Probeer het opnieuw.')
+    }
+  }
+
+  function stop() {
+    recognition.current?.abort()
+  }
+
+  return { listening, start, stop }
+}
