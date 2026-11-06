@@ -519,10 +519,9 @@ h2 {
   border-radius: 0 0 14px 14px;
 }
 
-/* Staan er items onder de invoerregel, dan een schaduw erboven (F29). */
+/* Staan er items onder de invoerregel, dan een grijze lijn erboven (F29). */
 .add-row.covering {
   border-top: 1px solid var(--line);
-  box-shadow: 0 -6px 12px -6px rgba(16, 24, 40, 0.12);
 }
 
 /*
@@ -535,10 +534,10 @@ h2 {
   display: flex;
   align-items: center;
   gap: 2px;
-  min-width: 44px;
+  min-width: 72px;
   justify-content: center;
   height: 20px;
-  padding: 0 10px 0 7px;
+  padding: 0 16px 0 12px;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--accent);
