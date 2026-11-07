@@ -19,7 +19,7 @@ import {
   splitTyped,
   type Lijstje,
 } from './lists'
-import { zetInAgenda, type Agenda } from './agenda'
+import { PER_ITEM, zetInAgenda, type AgendaKeuze } from './agenda'
 import Reminders from './Reminders'
 import { dueItems } from './reminders'
 import Settings from './Settings'
@@ -157,11 +157,14 @@ export default function App() {
   }
 
   /** Kiest de agenda van het lijstje en zet zo nodig een item erin (F34). */
-  function agenda(keuze: Agenda | null, itemId: string | null, nieuweDatum?: string) {
+  function agenda(keuze: AgendaKeuze | null, itemId: string | null, nieuweDatum?: string) {
     const l = lijstje
-    if (keuze && keuze !== l.agenda) update(l.id, (x) => ({ ...x, agenda: keuze }))
+    // Bij Per item kiezen blijft dat de keuze van het lijstje; de agenda geldt alleen voor dit item (F34).
+    const voorLijstje = !(itemId && l.agenda === PER_ITEM)
+    if (keuze && keuze !== l.agenda && voorLijstje) update(l.id, (x) => ({ ...x, agenda: keuze }))
     const item = l.items.find((i) => i.id === itemId)
     const welke = keuze ?? l.agenda
+    if (welke === PER_ITEM) return
     // Net bewaard in het vak met datum en tijd: die datum, ook al staat hij nog niet in `lijstje`.
     const wanneer = nieuweDatum ?? item?.wanneer
     if (!item || !wanneer || !welke) return

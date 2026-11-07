@@ -1,6 +1,6 @@
 // De lijstjes en hun items: de gegevens, bewaren en ophalen, en de regels voor toevoegen (F3 t/m F5).
 
-import { isAgenda, isWanneer, type Agenda } from './agenda'
+import { isAgendaKeuze, isWanneer, type AgendaKeuze } from './agenda'
 import { KEY_PREFIX } from './storageKey'
 
 export interface Item {
@@ -24,7 +24,7 @@ export interface Lijstje {
    */
   herinnering?: boolean
   /** De agenda van dit herinneringslijstje, gekozen bij de eerste keer in de agenda zetten (F34). */
-  agenda?: Agenda
+  agenda?: AgendaKeuze
 }
 
 /** Alle sleutels beginnen met "lijstjes-", omdat WoonWerk dezelfde opslag van de browser deelt (AC16). */
@@ -39,7 +39,7 @@ export const HERINNERINGEN_KEY = `${KEY_PREFIX}herinneringen`
 
 export interface Herinneringen {
   /** `uit`: de herinnering van dit lijstje is uitgezet, de datums blijven bewaard (F38). */
-  lijstjes: Record<string, { agenda?: Agenda; uit?: true }>
+  lijstjes: Record<string, { agenda?: AgendaKeuze; uit?: true }>
   items: Record<string, { wanneer?: string; inAgenda?: string }>
 }
 
@@ -210,7 +210,7 @@ export function mergeHerinneringen(lijstjes: Lijstje[], value: unknown): Lijstje
     return {
       ...l,
       herinnering: extraLijstje?.uit !== true,
-      ...(isAgenda(agenda) && { agenda }),
+      ...(isAgendaKeuze(agenda) && { agenda }),
       items: l.items.map((i) => {
         const extra = Object.hasOwn(items, i.id) ? (items[i.id] as { wanneer?: unknown; inAgenda?: unknown } | null) : null
         if (!extra) return i
