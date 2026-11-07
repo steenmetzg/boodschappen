@@ -36,10 +36,14 @@ function storeAfspraken(items: Record<string, { wanneer?: string; inAgenda?: str
   )
 }
 
+/** Tikt op het agenda-knopje van een item, of het al in de agenda staat of niet. */
+async function agendaButton(user: ReturnType<typeof userEvent.setup>, tekst: string) {
+  await user.click(screen.getByRole('button', { name: new RegExp(`^${tekst} (in agenda zetten|staat in je agenda)`) }))
+}
+
 /** Opent het vak met datum en tijd (via de datum, of via het agenda-knopje zonder datum) en bewaart. */
 async function setDate(user: ReturnType<typeof userEvent.setup>, tekst: string, value: string) {
-  const dateButton = screen.queryByRole('button', { name: new RegExp(`^Datum en tijd van ${tekst}:`) })
-  await user.click(dateButton ?? screen.getByRole('button', { name: `${tekst} in agenda zetten` }))
+  await agendaButton(user, tekst)
   const box = screen.getByRole('region', { name: 'Datum en tijd' })
   fireEvent.change(within(box).getByLabelText(`Datum en tijd van ${tekst}`), { target: { value } })
   await user.click(within(box).getByRole('button', { name: 'Bewaren' }))
@@ -131,7 +135,12 @@ describe('AC27: in de agenda zetten', () => {
     await user.click(within(box).getByRole('button', { name: 'Annuleren' }))
     expect(screen.queryByRole('region', { name: 'Datum en tijd' })).not.toBeInTheDocument()
     expect(open).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Tandarts in agenda zetten' }))
+    // Met een datum opent het knopje ook het vak, met de datum al ingevuld; datum zelf is niet aan te tikken.
+    expect(screen.queryByRole('button', { name: /do 12 nov/ })).not.toBeInTheDocument()
+    await agendaButton(user, 'Tandarts')
+    const box2 = screen.getByRole('region', { name: 'Datum en tijd' })
+    expect(within(box2).getByLabelText('Datum en tijd van Tandarts')).toHaveValue('2026-11-12T09:30')
+    await user.click(within(box2).getByRole('button', { name: 'In agenda zetten' }))
     const choice = screen.getByRole('region', { name: 'Agenda kiezen' })
     expect(within(choice).getByText('In welke agenda?')).toBeInTheDocument()
     expect(within(choice).getAllByRole('button').map((b) => b.textContent)).toEqual([
@@ -150,12 +159,19 @@ describe('AC27: in de agenda zetten', () => {
     expect(url.searchParams.get('text')).toBe('Tandarts')
     expect(url.searchParams.get('dates')).toBe('20261112T093000/20261112T100000')
     // Het item staat nu in de agenda (blauw agenda-knopje).
-    const placed = await screen.findByRole('button', { name: 'Tandarts staat in je agenda; opnieuw in agenda zetten' })
-    expect(placed).toHaveClass('placed')
+    expect(await screen.findByRole('button', { name: 'Tandarts staat in je agenda; datum wijzigen' })).toHaveClass('placed')
 
-    // Volgende keer geen keuze meer: meteen naar Google Agenda.
-    await setDate(user, 'APK', '2026-11-20T08:00')
-    await user.click(screen.getByRole('button', { name: 'APK in agenda zetten' }))
+    // Nog eens: het vak zegt dat het er al in staat, en met dezelfde datum kan het er niet nog eens in.
+    await agendaButton(user, 'Tandarts')
+    const box3 = screen.getByRole('region', { name: 'Datum en tijd' })
+    expect(within(box3).getByText('Staat al in je agenda op do 12 nov 09:30.')).toBeInTheDocument()
+    expect(within(box3).getByRole('button', { name: 'In agenda zetten' })).toBeDisabled()
+    await user.click(within(box3).getByRole('button', { name: 'Annuleren' }))
+
+    // Volgende item: geen keuze meer, meteen naar Google Agenda.
+    await agendaButton(user, 'APK')
+    fireEvent.change(screen.getByLabelText('Datum en tijd van APK'), { target: { value: '2026-11-20T08:00' } })
+    await user.click(screen.getByRole('button', { name: 'In agenda zetten' }))
     expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
     expect(open).toHaveBeenCalledTimes(2)
     expect(new URL(open.mock.calls[1][0]).searchParams.get('text')).toBe('APK')
@@ -168,7 +184,9 @@ describe('AC27: in de agenda zetten', () => {
     await user.click(within(change).getByRole('button', { name: 'Outlook (werk)' }))
     // Alleen kiezen zet niets in de agenda.
     expect(open).toHaveBeenCalledTimes(2)
-    await user.click(screen.getByRole('button', { name: 'APK staat in je agenda; opnieuw in agenda zetten' }))
+    await agendaButton(user, 'Anne bellen')
+    fireEvent.change(screen.getByLabelText('Datum en tijd van Anne bellen'), { target: { value: '2026-11-21T10:00' } })
+    await user.click(screen.getByRole('button', { name: 'In agenda zetten' }))
     expect(new URL(open.mock.calls[2][0]).hostname).toBe('outlook.office.com')
     // De keuze is bewaard.
     expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes.h.agenda).toBe('outlook-werk')
@@ -189,7 +207,7 @@ describe('AC27: in de agenda zetten', () => {
     expect(url.hostname).toBe('outlook.live.com')
     expect(url.searchParams.get('subject')).toBe('APK')
     expect(screen.getByText('vr 20 nov 08:00')).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'APK staat in je agenda; opnieuw in agenda zetten' })).toHaveClass('placed')
+    expect(await screen.findByRole('button', { name: 'APK staat in je agenda; datum wijzigen' })).toHaveClass('placed')
   })
 
   it('maakt goede links en een agenda-bestand', () => {
@@ -216,7 +234,7 @@ describe('AC28: datum wijzigen van een item in de agenda', () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30', inAgenda: '2026-11-12T09:30' } }, 'google')
     const user = userEvent.setup()
     render(<App />)
-    expect(screen.getByRole('button', { name: 'Tandarts staat in je agenda; opnieuw in agenda zetten' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tandarts staat in je agenda; datum wijzigen' })).toBeInTheDocument()
     await setDate(user, 'Tandarts', '2026-11-13T09:30')
     expect(screen.getByRole('status')).toHaveTextContent(
       'Tandarts staat nog met de oude datum en tijd in je agenda. Verwijder dat agenda-item zelf.',
