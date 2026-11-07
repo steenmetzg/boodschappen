@@ -16,7 +16,11 @@ export default function Reminders({ due, onOpen, onToggle, onClose }: Props) {
     <section className="voice reminders" aria-label="Herinneringen">
       <div className="reminders-body">
         <strong>
-          <Bell size={15} strokeWidth={2} aria-hidden /> Herinneringen
+          {/* Het belletje staat boven de rondjes en de titel boven de teksten. */}
+          <span className="reminder-icon" aria-hidden>
+            <Bell size={16} strokeWidth={2} />
+          </span>
+          Herinneringen
         </strong>
         <ul>
           {due.map((d) => (

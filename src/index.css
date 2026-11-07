@@ -895,6 +895,8 @@ span.item-grip {
 /* Herinneringen bij het openen van de app (F36). */
 .voice.reminders {
   align-items: flex-start;
+  /* Minder ruimte links, zodat de rondjes en het belletje dicht bij de streep staan. */
+  padding-left: 4px;
 }
 
 .reminders-body {
@@ -906,7 +908,14 @@ span.item-grip {
 .reminders-body strong {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+.reminder-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  flex-shrink: 0;
 }
 
 .reminders-body ul {
