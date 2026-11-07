@@ -285,7 +285,7 @@ export default function ListView({
               onClick={() => setNaam(lijstje.naam)}
             >
               <span className="title-text">{lijstje.naam}</span>
-              <Pencil className="title-pencil" size={18} strokeWidth={1.75} aria-hidden />
+              <Pencil className="title-pencil" size={15} strokeWidth={1.75} aria-hidden />
             </button>
           </h1>
         ) : (
