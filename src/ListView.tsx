@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
-import { ArrowLeft, Bell, BellOff, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bell, BellOff, CalendarCheck, CalendarDays, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
 import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
@@ -231,6 +231,7 @@ export default function ListView({
   // Het vak met datum en tijd van een item (F33): het item en de datum in het veld.
   const [dating, setDating] = useState<{ id: string; waarde: string } | null>(null)
   const datingItem = dating ? lijstje.items.find((i) => i.id === dating.id) : undefined
+  const dateInput = useRef<HTMLInputElement>(null)
   const herinnering = lijstje.herinnering === true
   // Een herinneringslijstje staat op datum (F33).
   const items = herinnering ? opDatum(lijstje.items) : lijstje.items
@@ -398,11 +399,29 @@ export default function ListView({
             )}
             <div className="date-field">
               <input
+                ref={dateInput}
                 type="datetime-local"
                 aria-label={`Datum en tijd van ${datingItem.tekst}`}
                 value={dating.waarde}
                 onChange={(e) => setDating({ ...dating, waarde: e.target.value })}
               />
+              <button
+                type="button"
+                className="date-clear date-open"
+                aria-label="Datum en tijd kiezen"
+                onClick={() => {
+                  // De kiezer van de telefoon; Android toont in het veld zelf alleen een pijltje (F33).
+                  const input = dateInput.current
+                  if (!input) return
+                  try {
+                    input.showPicker()
+                  } catch {
+                    input.focus()
+                  }
+                }}
+              >
+                <CalendarDays size={18} strokeWidth={1.75} aria-hidden />
+              </button>
               <button
                 type="button"
                 className="date-clear"

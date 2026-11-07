@@ -1037,6 +1037,15 @@ span.item-grip {
   margin: 0;
 }
 
+/* Het eigen pijltje of kalendertje van de browser weg; het kalenderknopje ernaast opent de kiezer (F33). */
+.date-field input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.date-clear.date-open {
+  color: var(--accent);
+}
+
 .date-clear {
   flex-shrink: 0;
   display: grid;
