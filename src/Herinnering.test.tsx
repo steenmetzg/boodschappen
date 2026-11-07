@@ -46,7 +46,7 @@ async function setDate(user: ReturnType<typeof userEvent.setup>, tekst: string, 
   await agendaButton(user, tekst)
   const box = screen.getByRole('region', { name: 'Datum en tijd' })
   fireEvent.change(within(box).getByLabelText(`Datum en tijd van ${tekst}`), { target: { value } })
-  await user.click(within(box).getByRole('button', { name: 'Bewaren' }))
+  await user.click(within(box).getByRole('button', { name: 'Alleen in Lijstjes bewaren' }))
 }
 
 describe('AC25: herinneringslijstje maken', () => {

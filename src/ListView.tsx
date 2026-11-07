@@ -333,7 +333,7 @@ export default function ListView({
             />
             <div className="confirm-buttons">
               <button type="button" disabled={dating.waarde === (datingItem.wanneer ?? '')} onClick={() => saveDate(false)}>
-                Bewaren
+                Alleen in Lijstjes bewaren
               </button>
               <button
                 type="button"
