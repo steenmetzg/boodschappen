@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { Bell, GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
+import { Bell, BellOff, GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import type { Notice } from './ListView'
 import { itemsText, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
@@ -144,7 +144,12 @@ function ListRow({
           aria-current={current ? 'true' : undefined}
           onClick={onOpen}
         >
-          {lijstje.herinnering && <Bell className="list-bell" size={15} strokeWidth={2} aria-label="Herinneringslijstje" />}
+          {lijstje.herinnering ? (
+            <Bell className="list-bell" size={15} strokeWidth={2} aria-label="Herinneringslijstje" />
+          ) : (
+            // Grijs en zonder actie: een herinneringslijstje maak je op het lijstje zelf (F38).
+            <BellOff className="list-bell off" size={15} strokeWidth={2} aria-hidden />
+          )}
           <span className="list-name">{lijstje.naam}</span>
           {open > 0 && (
             <span className="count" aria-hidden>

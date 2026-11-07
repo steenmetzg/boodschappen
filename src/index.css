@@ -954,6 +954,10 @@ h2 {
   color: var(--accent);
 }
 
+.list-bell.off {
+  color: var(--muted);
+}
+
 /* Een lege plek voor de greep (invoerregel, herinneringslijstje): niets om vast te pakken. */
 span.item-grip {
   cursor: default;
