@@ -133,7 +133,8 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip }: Ro
             autoFocus
             maxLength={MAX_TEKST}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            // Ook hier zelf afkappen: het toetsenbord van Android houdt zich niet altijd aan maxLength (F27).
+            onChange={(e) => setText(e.target.value.slice(0, MAX_TEKST))}
             onBlur={() => save()}
             onKeyDown={(e) => {
               if (e.key === 'Escape') setEditing(false)
