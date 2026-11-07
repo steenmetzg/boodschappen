@@ -879,3 +879,9 @@ h2 {
   flex-shrink: 0;
   color: var(--accent);
 }
+
+/* Een lege plek voor de greep (invoerregel, herinneringslijstje): niets om vast te pakken. */
+span.item-grip {
+  cursor: default;
+  touch-action: auto;
+}
