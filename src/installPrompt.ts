@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { KEY_PREFIX } from './storageKey'
 
 /** Het browsersignaal dat Chrome stuurt als de app installeerbaar is en nog niet geïnstalleerd. */
 export interface BeforeInstallPromptEvent extends Event {
@@ -6,7 +7,7 @@ export interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-export const INSTALL_LATER_KEY = 'lijstjes-installatievraag-later'
+export const INSTALL_LATER_KEY = `${KEY_PREFIX}installatievraag-later`
 export const INSTALL_LATER_DAYS = 30
 
 // Chrome kan het signaal sturen voordat het scherm klaar is: vang het daarom meteen op.

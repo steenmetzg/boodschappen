@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { ArrowLeft, Download, FolderOpen, Mic, RotateCcw, Upload } from 'lucide-react'
 import { backupFileName, contentCount, createBackup, parseBackup } from './backup'
 import ConfirmDialog from './ConfirmDialog'
+import { IS_TEST } from './storageKey'
 import {
   canChooseFolder,
   canPickFileInFolder,
@@ -232,7 +233,7 @@ export default function Settings({ lijstjes, huidig, speechEnabled, onChangeSpee
         </section>
       )}
 
-      <p className="version">Versie: {__APP_VERSION__}</p>
+      <p className="version">Versie: {__APP_VERSION__}{IS_TEST ? ' (testversie)' : ''}</p>
     </main>
   )
 }

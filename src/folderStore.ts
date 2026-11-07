@@ -1,6 +1,8 @@
 // Onthoudt de gekozen backupmap in IndexedDB. Een map-"handle" kan niet in
 // localStorage, maar wel in IndexedDB worden bewaard.
-const DB_NAME = 'lijstjes-backupmap'
+import { KEY_PREFIX } from './storageKey'
+
+const DB_NAME = `${KEY_PREFIX}backupmap`
 const STORE = 'instellingen'
 const KEY = 'backupmap'
 
