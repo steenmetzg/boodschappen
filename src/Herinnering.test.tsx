@@ -180,7 +180,7 @@ describe('AC27: in de agenda zetten', () => {
     // Met het belletje kies je een andere agenda voor het lijstje.
     await user.click(screen.getByRole('button', { name: 'Agenda van dit lijstje' }))
     const change = screen.getByRole('region', { name: 'Agenda kiezen' })
-    expect(within(change).getByText('Agenda voor Afspraken')).toBeInTheDocument()
+    expect(within(change).getByText('Herinneringen voor Afspraken')).toBeInTheDocument()
     expect(within(change).getByRole('button', { name: 'Google Agenda' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(within(change).getByRole('button', { name: 'Outlook (werk)' }))
     // Alleen kiezen zet niets in de agenda.
