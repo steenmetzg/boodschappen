@@ -114,7 +114,7 @@ function ListRow({
             maxLength={MAX_NAAM}
             value={naam}
             onChange={(e) => {
-              setNaam(e.target.value)
+              setNaam(e.target.value.slice(0, MAX_NAAM))
               onError(null)
             }}
             onBlur={() => {
@@ -292,7 +292,7 @@ export default function Lists({
               maxLength={MAX_NAAM}
               value={naam}
               onChange={(e) => {
-                setNaam(e.target.value)
+                setNaam(e.target.value.slice(0, MAX_NAAM))
                 setError(null)
               }}
             />

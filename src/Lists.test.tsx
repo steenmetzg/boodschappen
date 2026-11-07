@@ -302,6 +302,20 @@ describe('AC8: lijstje maken', () => {
     expect(listNames()).toEqual(['AH', 'Klussen'])
   })
 
+  it('houdt een naam op 30 tekens, ook als het toetsenbord zich niet aan de grens houdt', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await openMyLists(user)
+    const field = screen.getByRole('textbox', { name: 'Naam van het nieuwe lijstje' })
+    // Zo plakt het toetsenbord van Android soms tekst voorbij maxLength.
+    fireEvent.change(field, { target: { value: 'a'.repeat(40) } })
+    expect(field).toHaveValue('a'.repeat(30))
+    await user.click(screen.getByRole('button', { name: 'Naam van Mijn 1e lijstje wijzigen' }))
+    const rename = screen.getByRole('textbox', { name: 'Nieuwe naam voor Mijn 1e lijstje' })
+    fireEvent.change(rename, { target: { value: 'b'.repeat(40) } })
+    expect(rename).toHaveValue('b'.repeat(30))
+  })
+
   it('heeft geen maximum aan het aantal lijstjes', async () => {
     const user = userEvent.setup()
     storeLists(Array.from({ length: 30 }, (_, i) => list(`l${i}`, `Lijstje ${i}`)))
@@ -480,6 +494,16 @@ describe('AC2: de invoerregel staat in het lijstje', () => {
 })
 
 describe('AC20: item aanpassen', () => {
+  it('houdt de tekst op 60 tekens, ook als het toetsenbord zich niet aan de grens houdt', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await typeItem(user, 'melk')
+    await user.click(screen.getByRole('button', { name: 'melk aanpassen' }))
+    const field = screen.getByRole('textbox', { name: 'Item aanpassen' })
+    fireEvent.change(field, { target: { value: 'x'.repeat(70) } })
+    expect(field).toHaveValue('x'.repeat(60))
+  })
+
   it('maakt van de tekst een tekstveld als je erop tikt; Enter bewaart, op dezelfde plek', async () => {
     const user = userEvent.setup()
     render(<App />)
