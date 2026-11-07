@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
 import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
-import { limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
 
@@ -33,6 +33,8 @@ interface Props {
   onAgenda: (agenda: Agenda | null, itemId: string | null, wanneer?: string) => void
   /** De melding met herinneringen (F36). */
   reminders?: ReactNode
+  /** Nieuwe naam voor het lijstje; `false` als die niet kan (de melding staat dan onderaan) (F37). */
+  onRename: (naam: string) => boolean
 }
 
 interface RowProps {
@@ -212,9 +214,12 @@ export default function ListView({
   onWhen,
   onAgenda,
   reminders,
+  onRename,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
+  // De naam van het lijstje aanpassen door op de titel te tikken (F37).
+  const [naam, setNaam] = useState<string | null>(null)
   // De keuze van de agenda: `voor` is het item dat daarna in de agenda gaat, of `null` bij het belletje (F34).
   const [choosing, setChoosing] = useState<{ voor: string | null } | null>(null)
   // Het vak met datum en tijd van een item (F33): het item en de datum in het veld.
@@ -271,7 +276,46 @@ export default function ListView({
         <button type="button" className="back-button" aria-label="Terug naar Mijn lijstjes" onClick={onBack}>
           <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
         </button>
-        <h1>{lijstje.naam}</h1>
+        {naam === null ? (
+          <h1>
+            <button
+              type="button"
+              className="title-button"
+              aria-label={`Naam van ${lijstje.naam} wijzigen`}
+              onClick={() => setNaam(lijstje.naam)}
+            >
+              {lijstje.naam}
+            </button>
+          </h1>
+        ) : (
+          <form
+            className="title-edit"
+            onSubmit={(e) => {
+              e.preventDefault()
+              // Enter: een goede naam bewaren; anders blijft het veld open met de melding onderaan (F37).
+              if (naam.trim() === lijstje.naam || onRename(naam)) setNaam(null)
+            }}
+          >
+            <input
+              type="text"
+              aria-label={`Nieuwe naam voor ${lijstje.naam}`}
+              enterKeyHint="done"
+              autoComplete="off"
+              autoFocus
+              maxLength={MAX_NAAM}
+              value={naam}
+              onChange={(e) => setNaam(e.target.value.slice(0, MAX_NAAM))}
+              onBlur={() => {
+                // Ergens anders tikken: een goede naam wordt bewaard, anders blijft de oude naam staan.
+                if (naam.trim() !== lijstje.naam) onRename(naam)
+                setNaam(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setNaam(null)
+              }}
+            />
+          </form>
+        )}
         <div className="header-actions">
           {herinnering && (
             <button

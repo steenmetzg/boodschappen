@@ -265,6 +265,16 @@ export default function App() {
         setScreen('lijstjes')
       }}
       reminders={reminders}
+      onRename={(naam) => {
+        const problem = nameError(lijstjes, naam, lijstje.id)
+        if (problem) {
+          setNotice({ kind: 'error', text: problem })
+          return false
+        }
+        update(lijstje.id, (l) => ({ ...l, naam: naam.trim() }))
+        setNotice(null)
+        return true
+      }}
       onWhen={changeWhen}
       onAgenda={agenda}
       mic={{
