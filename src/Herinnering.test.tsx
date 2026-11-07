@@ -36,8 +36,13 @@ function storeAfspraken(items: Record<string, { wanneer?: string; inAgenda?: str
   )
 }
 
-function setDate(tekst: string, value: string) {
-  fireEvent.change(screen.getByLabelText(`Datum en tijd van ${tekst}`), { target: { value } })
+/** Opent het vak met datum en tijd (via de datum, of via het agenda-knopje zonder datum) en bewaart. */
+async function setDate(user: ReturnType<typeof userEvent.setup>, tekst: string, value: string) {
+  const dateButton = screen.queryByRole('button', { name: new RegExp(`^Datum en tijd van ${tekst}:`) })
+  await user.click(dateButton ?? screen.getByRole('button', { name: `${tekst} in agenda zetten` }))
+  const box = screen.getByRole('region', { name: 'Datum en tijd' })
+  fireEvent.change(within(box).getByLabelText(`Datum en tijd van ${tekst}`), { target: { value } })
+  await user.click(within(box).getByRole('button', { name: 'Bewaren' }))
 }
 
 describe('AC25: herinneringslijstje maken', () => {
@@ -55,7 +60,9 @@ describe('AC25: herinneringslijstje maken', () => {
     expect(screen.getByRole('heading', { name: 'Afspraken' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Agenda van dit lijstje' })).toBeInTheDocument()
     await typeItem(user, 'tandarts')
-    expect(screen.getByText('Datum kiezen')).toBeInTheDocument()
+    // Nog geen datum: geen datumregel, wel het agenda-knopje.
+    expect(screen.queryByRole('button', { name: /^Datum en tijd van tandarts/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'tandarts in agenda zetten' })).toBeEnabled()
     // Een herinneringslijstje staat op datum: geen greep om te verplaatsen.
     expect(screen.queryByRole('button', { name: 'tandarts verplaatsen' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Terug naar Mijn lijstjes' }))
@@ -77,23 +84,24 @@ describe('AC25: herinneringslijstje maken', () => {
 })
 
 describe('AC26: datum en tijd', () => {
-  it('toont de datum onder het item, sorteert op datum en kleurt een voorbije datum rood', () => {
+  it('toont de datum onder het item, sorteert op datum en kleurt een voorbije datum rood', async () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30' } })
+    const user = userEvent.setup()
     render(<App />)
     expect(itemTexts()).toEqual(['Tandarts', 'Anne bellen', 'APK'])
-    setDate('APK', '2026-11-08T14:00')
+    await setDate(user, 'APK', '2026-11-08T14:00')
     expect(screen.getByText('zo 8 nov 14:00')).toBeInTheDocument()
     expect(screen.getByText('do 12 nov 09:30')).toBeInTheDocument()
     // APK is eerder dan de tandarts en staat nu bovenaan; Anne bellen heeft geen datum en staat onderaan.
     expect(itemTexts()).toEqual(['APK', 'Tandarts', 'Anne bellen'])
-    setDate('Anne bellen', '2026-11-06T19:00')
+    await setDate(user, 'Anne bellen', '2026-11-06T19:00')
     expect(itemTexts()).toEqual(['Anne bellen', 'APK', 'Tandarts'])
-    expect(screen.getByText('vr 6 nov 19:00').parentElement).toHaveClass('past')
-    expect(screen.getByText('zo 8 nov 14:00').parentElement).not.toHaveClass('past')
-    // Datum weghalen: weer "Datum kiezen", onderaan.
-    setDate('Anne bellen', '')
+    expect(screen.getByText('vr 6 nov 19:00')).toHaveClass('past')
+    expect(screen.getByText('zo 8 nov 14:00')).not.toHaveClass('past')
+    // Datum weghalen (veld leeg en Bewaren): geen datumregel meer, onderaan.
+    await setDate(user, 'Anne bellen', '')
     expect(itemTexts()).toEqual(['APK', 'Tandarts', 'Anne bellen'])
-    expect(screen.getByText('Datum kiezen')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Datum en tijd van Anne bellen/ })).not.toBeInTheDocument()
   })
 
   it('formatteert datum en tijd in het Nederlands, met het jaar als dat anders is', () => {
@@ -115,12 +123,13 @@ describe('AC27: in de agenda zetten', () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30' } })
     const user = userEvent.setup()
     render(<App />)
-    // Zonder datum opent het agenda-knopje eerst de datumkiezer, zonder keuze van de agenda.
-    const showPicker = vi.fn()
-    ;(screen.getByLabelText('Datum en tijd van APK') as HTMLInputElement).showPicker = showPicker
+    // Zonder datum opent het agenda-knopje eerst het vak met datum en tijd, zonder keuze van de agenda.
     await user.click(screen.getByRole('button', { name: 'APK in agenda zetten' }))
-    expect(showPicker).toHaveBeenCalledTimes(1)
+    const box = screen.getByRole('region', { name: 'Datum en tijd' })
+    expect(within(box).getByRole('button', { name: 'In agenda zetten' })).toBeDisabled()
     expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
+    await user.click(within(box).getByRole('button', { name: 'Annuleren' }))
+    expect(screen.queryByRole('region', { name: 'Datum en tijd' })).not.toBeInTheDocument()
     expect(open).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Tandarts in agenda zetten' }))
     const choice = screen.getByRole('region', { name: 'Agenda kiezen' })
@@ -145,7 +154,7 @@ describe('AC27: in de agenda zetten', () => {
     expect(placed).toHaveClass('placed')
 
     // Volgende keer geen keuze meer: meteen naar Google Agenda.
-    setDate('APK', '2026-11-20T08:00')
+    await setDate(user, 'APK', '2026-11-20T08:00')
     await user.click(screen.getByRole('button', { name: 'APK in agenda zetten' }))
     expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
     expect(open).toHaveBeenCalledTimes(2)
@@ -163,6 +172,24 @@ describe('AC27: in de agenda zetten', () => {
     expect(new URL(open.mock.calls[2][0]).hostname).toBe('outlook.office.com')
     // De keuze is bewaard.
     expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes.h.agenda).toBe('outlook-werk')
+  })
+
+  it('zet een item zonder datum vanuit het vak met datum en tijd meteen in de agenda', async () => {
+    const open = vi.fn()
+    vi.stubGlobal('open', open)
+    storeAfspraken({}, 'outlook')
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'APK in agenda zetten' }))
+    const box = screen.getByRole('region', { name: 'Datum en tijd' })
+    fireEvent.change(within(box).getByLabelText('Datum en tijd van APK'), { target: { value: '2026-11-20T08:00' } })
+    await user.click(within(box).getByRole('button', { name: 'In agenda zetten' }))
+    expect(open).toHaveBeenCalledTimes(1)
+    const url = new URL(open.mock.calls[0][0])
+    expect(url.hostname).toBe('outlook.live.com')
+    expect(url.searchParams.get('subject')).toBe('APK')
+    expect(screen.getByText('vr 20 nov 08:00')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'APK staat in je agenda; opnieuw in agenda zetten' })).toHaveClass('placed')
   })
 
   it('maakt goede links en een agenda-bestand', () => {
@@ -185,21 +212,23 @@ describe('AC27: in de agenda zetten', () => {
 })
 
 describe('AC28: datum wijzigen van een item in de agenda', () => {
-  it('waarschuwt dat het oude agenda-item blijft staan', () => {
+  it('waarschuwt dat het oude agenda-item blijft staan', async () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30', inAgenda: '2026-11-12T09:30' } }, 'google')
+    const user = userEvent.setup()
     render(<App />)
     expect(screen.getByRole('button', { name: 'Tandarts staat in je agenda; opnieuw in agenda zetten' })).toBeInTheDocument()
-    setDate('Tandarts', '2026-11-13T09:30')
+    await setDate(user, 'Tandarts', '2026-11-13T09:30')
     expect(screen.getByRole('status')).toHaveTextContent(
       'Tandarts staat nog met de oude datum en tijd in je agenda. Verwijder dat agenda-item zelf.',
     )
     expect(screen.getByRole('button', { name: 'Tandarts in agenda zetten' })).not.toHaveClass('placed')
   })
 
-  it('waarschuwt niet bij een item dat niet in de agenda staat', () => {
+  it('waarschuwt niet bij een item dat niet in de agenda staat', async () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30' } })
+    const user = userEvent.setup()
     render(<App />)
-    setDate('Tandarts', '2026-11-13T09:30')
+    await setDate(user, 'Tandarts', '2026-11-13T09:30')
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

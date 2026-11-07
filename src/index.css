@@ -804,17 +804,14 @@ h2 {
   margin-bottom: 0;
 }
 
-/* Datum en tijd: tik erop en de datumkiezer van de telefoon gaat open (F33). */
+/* Datum en tijd: tik erop om ze te wijzigen (F33). */
 .item-when {
-  position: relative;
   align-self: flex-start;
   min-height: 26px;
   padding: 1px 4px 7px;
+  border: none;
   font-size: 0.85rem;
-  color: var(--accent);
-}
-
-.item-when.no-date {
+  text-align: left;
   color: var(--accent);
 }
 
@@ -826,15 +823,22 @@ h2 {
   color: var(--muted);
 }
 
-.item-when input {
-  position: absolute;
-  inset: 0;
+/* Het vak met datum en tijd in de titelbalk (F33, F34). */
+.date-choice input {
+  display: block;
   width: 100%;
-  height: 100%;
-  opacity: 0;
-  border: none;
-  padding: 0;
+  min-height: 44px;
+  margin: 8px 0 2px;
+  padding: 0 10px;
   font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.date-choice input:focus-visible {
+  outline: 2px solid var(--accent);
 }
 
 /* Het agenda-knopje: blauw als het item met deze datum en tijd in je agenda staat (F34). */

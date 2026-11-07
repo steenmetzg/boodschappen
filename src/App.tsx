@@ -129,13 +129,14 @@ export default function App() {
   }
 
   /** Kiest de agenda van het lijstje en zet zo nodig een item erin (F34). */
-  function agenda(keuze: Agenda | null, itemId: string | null) {
+  function agenda(keuze: Agenda | null, itemId: string | null, nieuweDatum?: string) {
     const l = lijstje
     if (keuze && keuze !== l.agenda) update(l.id, (x) => ({ ...x, agenda: keuze }))
     const item = l.items.find((i) => i.id === itemId)
     const welke = keuze ?? l.agenda
-    if (!item?.wanneer || !welke) return
-    const wanneer = item.wanneer
+    // Net bewaard in het vak met datum en tijd: die datum, ook al staat hij nog niet in `lijstje`.
+    const wanneer = nieuweDatum ?? item?.wanneer
+    if (!item || !wanneer || !welke) return
     // Niet wachten vóór het openen: anders houdt de browser het nieuwe venster tegen.
     void zetInAgenda(welke, { id: item.id, titel: item.tekst, lijstje: l.naam, wanneer }).then((ok) => {
       if (ok) {
