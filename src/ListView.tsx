@@ -435,7 +435,10 @@ export default function ListView({
         {choosing && (
           <section className="confirm clear-choice agenda-choice" aria-label="Agenda kiezen">
             <strong>{choosing.voor ? 'In welke agenda?' : `Agenda voor ${lijstje.naam}`}</strong>
-            <p>{lijstje.naam} onthoudt je keuze.</p>
+            <p>
+              Herinneringen worden altijd in Lijstjes getoond. Kies hieronder waar je ze ook op wilt nemen. {lijstje.naam}{' '}
+              onthoudt je keuze.
+            </p>
             {!choosing.voor && (
               // De herinnering uitzetten maakt er weer een gewoon lijstje van (F38).
               <label className="herinnering-switch">
