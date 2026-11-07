@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Bell, GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import type { Notice } from './ListView'
@@ -36,6 +36,8 @@ interface Props {
   /** Het belletje bij Nieuw lijstje staat aan: het nieuwe lijstje wordt een herinneringslijstje (F32). */
   nieuwHerinnering: boolean
   onToggleHerinnering: () => void
+  /** De melding met herinneringen (F36). */
+  reminders?: ReactNode
 }
 
 interface RowProps {
@@ -194,6 +196,7 @@ export default function Lists({
   mic,
   nieuwHerinnering,
   onToggleHerinnering,
+  reminders,
 }: Props) {
   const [naam, setNaam] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
@@ -328,6 +331,7 @@ export default function Lists({
       </ul>
 
       <div ref={bottom} className="bottom">
+        {reminders}
         {confirmDelete && (
           <ConfirmDialog
             title="Dit lijstje bevat items"

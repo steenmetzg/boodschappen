@@ -100,7 +100,8 @@ describe('AC26: datum en tijd', () => {
     expect(itemTexts()).toEqual(['APK', 'Tandarts', 'Anne bellen'])
     await setDate(user, 'Anne bellen', '2026-11-06T19:00')
     expect(itemTexts()).toEqual(['Anne bellen', 'APK', 'Tandarts'])
-    expect(screen.getByText('vr 6 nov 19:00')).toHaveClass('past')
+    const items = screen.getByRole('list', { name: 'Items op Afspraken' })
+    expect(within(items).getByText('vr 6 nov 19:00')).toHaveClass('past')
     expect(screen.getByText('zo 8 nov 14:00')).not.toHaveClass('past')
     // Datum weghalen (veld leeg en Bewaren): geen datumregel meer, onderaan.
     await setDate(user, 'Anne bellen', '')
@@ -248,6 +249,65 @@ describe('AC28: datum wijzigen van een item in de agenda', () => {
     render(<App />)
     await setDate(user, 'Tandarts', '2026-11-13T09:30')
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+describe('AC30: herinneringen in de app', () => {
+  it('toont bij het openen de items van vandaag en eerder, niet afgevinkte, de oudste eerst', async () => {
+    storeAfspraken({
+      Tandarts: { wanneer: '2026-11-07T16:00' },
+      'Anne bellen': { wanneer: '2026-11-05T09:00' },
+      APK: { wanneer: '2026-11-08T08:00' },
+    })
+    const user = userEvent.setup()
+    render(<App />)
+    const box = screen.getByRole('region', { name: 'Herinneringen' })
+    const lines = within(box).getAllByRole('button').filter((b) => b.classList.contains('reminder'))
+    expect(lines.map((b) => b.textContent)).toEqual(['do 5 nov 09:00 Anne bellen (Afspraken)', 'Vandaag 16:00 Tandarts (Afspraken)'])
+    expect(lines[0]).toHaveClass('past')
+    expect(lines[1]).not.toHaveClass('past')
+    // Afvinken haalt het item uit de melding.
+    await user.click(screen.getByRole('button', { name: 'Tandarts' }))
+    expect(within(box).queryByText('Tandarts')).not.toBeInTheDocument()
+    // Sluiten: weg, tot je de app weer opent of terugkomt in de app.
+    await user.click(within(box).getByRole('button', { name: 'Herinneringen sluiten' }))
+    expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
+    fireEvent(document, new Event('visibilitychange'))
+    expect(await screen.findByRole('region', { name: 'Herinneringen' })).toBeInTheDocument()
+  })
+
+  it('opent het lijstje als je op een herinnering tikt, ook vanaf Mijn lijstjes', async () => {
+    storeAfspraken({ Tandarts: { wanneer: '2026-11-07T16:00' } })
+    localStorage.removeItem('lijstjes-huidig')
+    const user = userEvent.setup()
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'Mijn lijstjes' })).toBeInTheDocument()
+    await user.click(within(screen.getByRole('region', { name: 'Herinneringen' })).getByRole('button', { name: /Tandarts/ }))
+    expect(screen.getByRole('heading', { name: 'Afspraken' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
+  })
+
+  it('toont niets zonder items van vandaag of eerder', () => {
+    storeAfspraken({ APK: { wanneer: '2026-11-08T08:00' } })
+    render(<App />)
+    expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
+  })
+})
+
+describe('AC31: datum weghalen met het kruisje', () => {
+  it('maakt het datumveld leeg; bewaren haalt de datum weg', async () => {
+    storeAfspraken({ APK: { wanneer: '2026-11-20T08:00' } })
+    const user = userEvent.setup()
+    render(<App />)
+    await agendaButton(user, 'APK')
+    const box = screen.getByRole('region', { name: 'Datum en tijd' })
+    await user.click(within(box).getByRole('button', { name: 'Datum weghalen' }))
+    expect(within(box).getByLabelText('Datum en tijd van APK')).toHaveValue('')
+    expect(within(box).getByRole('button', { name: 'Datum weghalen' })).toBeDisabled()
+    expect(within(box).getByRole('button', { name: 'In agenda zetten' })).toBeDisabled()
+    await user.click(within(box).getByRole('button', { name: 'Alleen in Lijstjes bewaren' }))
+    expect(screen.queryByText('vr 20 nov 08:00')).not.toBeInTheDocument()
   })
 })
 

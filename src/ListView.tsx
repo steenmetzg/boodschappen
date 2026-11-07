@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
 import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
 import { limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
@@ -31,6 +31,8 @@ interface Props {
   onWhen: (id: string, wanneer: string | null) => void
   /** Herinneringslijstje: de agenda van het lijstje kiezen en, met een item, dat item erin zetten (F34). */
   onAgenda: (agenda: Agenda | null, itemId: string | null, wanneer?: string) => void
+  /** De melding met herinneringen (F36). */
+  reminders?: ReactNode
 }
 
 interface RowProps {
@@ -208,6 +210,7 @@ export default function ListView({
   mic,
   onWhen,
   onAgenda,
+  reminders,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
@@ -325,12 +328,23 @@ export default function ListView({
             {datingItem.inAgenda && datingItem.inAgenda === datingItem.wanneer && (
               <p>Staat al in je agenda op {formatWanneer(datingItem.inAgenda)}.</p>
             )}
-            <input
-              type="datetime-local"
-              aria-label={`Datum en tijd van ${datingItem.tekst}`}
-              value={dating.waarde}
-              onChange={(e) => setDating({ ...dating, waarde: e.target.value })}
-            />
+            <div className="date-field">
+              <input
+                type="datetime-local"
+                aria-label={`Datum en tijd van ${datingItem.tekst}`}
+                value={dating.waarde}
+                onChange={(e) => setDating({ ...dating, waarde: e.target.value })}
+              />
+              <button
+                type="button"
+                className="date-clear"
+                aria-label="Datum weghalen"
+                disabled={!dating.waarde}
+                onClick={() => setDating({ ...dating, waarde: '' })}
+              >
+                <X size={18} strokeWidth={1.75} aria-hidden />
+              </button>
+            </div>
             <div className="confirm-buttons">
               <button type="button" disabled={dating.waarde === (datingItem.wanneer ?? '')} onClick={() => saveDate(false)}>
                 Alleen in Lijstjes bewaren
@@ -441,6 +455,7 @@ export default function ListView({
       </ul>
 
       <div ref={bottom} className="bottom">
+        {reminders}
         {mic.listening ? (
           <section className="voice" aria-live="polite">
             <p>

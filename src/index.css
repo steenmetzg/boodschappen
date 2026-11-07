@@ -886,3 +886,80 @@ span.item-grip {
   cursor: default;
   touch-action: auto;
 }
+
+/* Herinneringen bij het openen van de app (F36). */
+.voice.reminders {
+  align-items: flex-start;
+}
+
+.reminders-body {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.reminders-body strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reminders-body ul {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.voice .reminder {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+  text-align: left;
+  white-space: normal;
+  font: inherit;
+}
+
+.reminder-when {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.reminder.past .reminder-when {
+  color: #b91c1c;
+}
+
+.reminder-list {
+  color: var(--muted);
+}
+
+/* Datumveld met rechts een kruisje om de datum weg te halen (F33). */
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 2px;
+}
+
+.date-field input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.date-clear {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  color: var(--muted);
+}
+
+.date-clear:disabled {
+  opacity: 0.35;
+}

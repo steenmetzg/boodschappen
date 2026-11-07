@@ -20,6 +20,8 @@ import {
   type Lijstje,
 } from './lists'
 import { zetInAgenda, type Agenda } from './agenda'
+import Reminders from './Reminders'
+import { dueItems } from './reminders'
 import Settings from './Settings'
 import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, spokenName, useSpeech } from './speech'
 
@@ -45,6 +47,29 @@ export default function App() {
     (text) => setNotice({ kind: 'error', text }),
   )
   const lijstje = lijstjes.find((l) => l.id === huidig) ?? lijstjes[0]
+  // Herinneringen (F36): bij het openen van de app, en als je terugkomt in de app, tot je ze sluit.
+  const [showReminders, setShowReminders] = useState(true)
+  const due = showReminders ? dueItems(lijstjes) : []
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') setShowReminders(true)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  const reminders =
+    due.length > 0 ? (
+      <Reminders
+        due={due}
+        onOpen={(id) => {
+          setShowReminders(false)
+          openList(id)
+        }}
+        onClose={() => setShowReminders(false)}
+      />
+    ) : null
 
   useEffect(() => saveLijstjes(lijstjes), [lijstjes])
   useEffect(() => {
@@ -188,6 +213,7 @@ export default function App() {
         justDeleted={justDeleted}
         notice={notice}
         onCloseNotice={() => setNotice(null)}
+        reminders={reminders}
         nieuwHerinnering={nieuwHerinnering}
         onToggleHerinnering={() => setNieuwHerinnering(!nieuwHerinnering)}
       mic={{
@@ -235,6 +261,7 @@ export default function App() {
         setNotice(null)
         setScreen('lijstjes')
       }}
+      reminders={reminders}
       onWhen={changeWhen}
       onAgenda={agenda}
       mic={{
