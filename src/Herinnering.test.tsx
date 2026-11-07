@@ -380,3 +380,51 @@ describe('AC29: terug naar een oudere versie kan', () => {
     expect(parseBackup(text).lijstjes).toEqual(lijstjes)
   })
 })
+
+describe('AC33: herinnering aan- en uitzetten op het lijstje', () => {
+  it('maakt van een gewoon lijstje een herinneringslijstje; items zonder datum tonen "Geen datum"', async () => {
+    const user = userEvent.setup()
+    storeLists([list('a', 'AH', ['melk', 'brood'])], 'a')
+    render(<App />)
+    expect(screen.queryByRole('button', { name: 'Agenda van dit lijstje' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Geen datum')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Herinneringslijstje maken' }))
+    expect(screen.getByRole('button', { name: 'Agenda van dit lijstje' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Herinneringslijstje maken' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Geen datum')).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('AH is nu een herinneringslijstje.')
+    expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes).toEqual({ a: {} })
+    expect(JSON.parse(localStorage.getItem(LISTS_KEY)!)[0]).toEqual(list('a', 'AH', ['melk', 'brood']))
+  })
+
+  it('het schuifje zet de herinnering uit; datums en agenda blijven bewaard en komen terug', async () => {
+    const user = userEvent.setup()
+    storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30', inAgenda: '2026-11-12T09:30' } }, 'google')
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Agenda van dit lijstje' }))
+    await user.click(screen.getByRole('switch', { name: 'Herinnering' }))
+    expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Herinneringslijstje maken' })).toBeInTheDocument()
+    expect(screen.queryByText('do 12 nov 09:30')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /in agenda zetten|staat in je agenda/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tandarts verplaatsen' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Afspraken is weer een gewoon lijstje.')
+    expect(screen.getByRole('status')).toHaveTextContent('1 item staat nog in je agenda')
+    expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes.h).toEqual({ agenda: 'google', uit: true })
+    expect(loadLijstjes()[0].herinnering).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Herinneringslijstje maken' }))
+    expect(screen.getByText('do 12 nov 09:30')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tandarts staat in je agenda; datum wijzigen' })).toBeInTheDocument()
+    expect(loadLijstjes()[0].agenda).toBe('google')
+  })
+
+  it('een uitgezet herinneringslijstje staat niet in de melding Herinneringen', async () => {
+    storeAfspraken({ Tandarts: { wanneer: '2026-11-07T16:00' } })
+    const h = JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!)
+    h.lijstjes.h = { uit: true }
+    localStorage.setItem(HERINNERINGEN_KEY, JSON.stringify(h))
+    render(<App />)
+    expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
+  })
+})

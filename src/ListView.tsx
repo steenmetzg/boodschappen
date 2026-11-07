@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
-import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bell, BellOff, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
 import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
@@ -31,6 +31,8 @@ interface Props {
   onWhen: (id: string, wanneer: string | null) => void
   /** Herinneringslijstje: de agenda van het lijstje kiezen en, met een item, dat item erin zetten (F34). */
   onAgenda: (agenda: Agenda | null, itemId: string | null, wanneer?: string) => void
+  /** Van een gewoon lijstje een herinneringslijstje maken, of de herinnering uitzetten (F38). */
+  onHerinnering: (aan: boolean) => void
   /** De melding met herinneringen (F36). */
   reminders?: ReactNode
   /** Nieuwe naam voor het lijstje; `false` als die niet kan (de melding staat dan onderaan) (F37). */
@@ -168,11 +170,14 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, heri
             {item.tekst}
           </button>
         )}
-        {herinnering && item.wanneer && (
+        {herinnering &&
           // Alleen tonen; wijzigen gaat via het agenda-knopje (F33). Rechts op deze regel is ruimte gelaten voor een
           // microfoon, om later datum en tijd in te spreken.
-          <span className={isVoorbij(item.wanneer) ? 'item-when past' : 'item-when'}>{formatWanneer(item.wanneer)}</span>
-        )}
+          (item.wanneer ? (
+            <span className={isVoorbij(item.wanneer) ? 'item-when past' : 'item-when'}>{formatWanneer(item.wanneer)}</span>
+          ) : (
+            <span className="item-when none">Geen datum</span>
+          ))}
       </div>
       {herinnering && (
         <button
@@ -215,6 +220,7 @@ export default function ListView({
   onAgenda,
   reminders,
   onRename,
+  onHerinnering,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
@@ -318,7 +324,7 @@ export default function ListView({
           </form>
         )}
         <div className="header-actions">
-          {herinnering && (
+          {herinnering ? (
             <button
               type="button"
               className="icon-button"
@@ -331,6 +337,19 @@ export default function ListView({
               }}
             >
               <Bell size={20} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : (
+            // Een gewoon lijstje: met de doorgestreepte bel wordt het een herinneringslijstje (F38).
+            <button
+              type="button"
+              className="icon-button bell-off"
+              aria-label="Herinneringslijstje maken"
+              onClick={() => {
+                setClearing(false)
+                onHerinnering(true)
+              }}
+            >
+              <BellOff size={20} strokeWidth={1.75} aria-hidden />
             </button>
           )}
           <button
@@ -414,6 +433,21 @@ export default function ListView({
           <section className="confirm clear-choice agenda-choice" aria-label="Agenda kiezen">
             <strong>{choosing.voor ? 'In welke agenda?' : `Agenda voor ${lijstje.naam}`}</strong>
             <p>{lijstje.naam} onthoudt je keuze.</p>
+            {!choosing.voor && (
+              // De herinnering uitzetten maakt er weer een gewoon lijstje van (F38).
+              <label className="herinnering-switch">
+                <span>Herinnering</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked
+                  onChange={() => {
+                    setChoosing(null)
+                    onHerinnering(false)
+                  }}
+                />
+              </label>
+            )}
             <div className="confirm-buttons">
               {AGENDAS.map((a) => (
                 <button
