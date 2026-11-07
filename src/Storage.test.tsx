@@ -44,6 +44,8 @@ describe('AC16: eigen opslag naast WoonWerk', () => {
 
 describe('Testversie: eigen opslag naast de echte app', () => {
   it('gebruikt "lijstjes-test-" in de testversie en "lijstjes-" in de echte app', async () => {
+    vi.stubEnv('VITE_TEST', '')
+    vi.resetModules()
     const echt = await import('./storageKey')
     expect(echt.IS_TEST).toBe(false)
     expect(echt.KEY_PREFIX).toBe('lijstjes-')

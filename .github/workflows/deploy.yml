@@ -53,12 +53,10 @@ jobs:
       - name: Testversie testen en bouwen
         if: steps.test.outputs.bestaat == 'ja'
         working-directory: test
-        env:
-          VITE_TEST: '1'
         run: |
           npm ci
           npm test
-          npm run build -- --outDir ../app/dist/test --emptyOutDir
+          VITE_TEST=1 npm run build -- --outDir ../app/dist/test --emptyOutDir
 
       - uses: actions/upload-pages-artifact@v3
         with:
