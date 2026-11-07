@@ -346,7 +346,10 @@ export default function ListView({
               aria-label="Herinneringslijstje maken"
               onClick={() => {
                 setClearing(false)
+                setDating(null)
                 onHerinnering(true)
+                // Meteen de agenda-keuze, met het schuifje om het weer uit te zetten (F38).
+                setChoosing({ voor: null })
               }}
             >
               <BellOff size={20} strokeWidth={1.75} aria-hidden />
