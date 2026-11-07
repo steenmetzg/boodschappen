@@ -430,3 +430,45 @@ describe('AC33: herinnering aan- en uitzetten op het lijstje', () => {
     expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
   })
 })
+
+describe('AC34: per item kiezen', () => {
+  it('de bel toont zes keuzes, de eerste keer zonder keuze; Per item kiezen vraagt bij elk item welke agenda', async () => {
+    const open = vi.fn()
+    vi.stubGlobal('open', open)
+    storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30' }, APK: { wanneer: '2026-11-20T08:00' } })
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Agenda van dit lijstje' }))
+    const choice = screen.getByRole('region', { name: 'Agenda kiezen' })
+    expect(within(choice).getByRole('switch', { name: 'Herinnering' })).toBeChecked()
+    const keuzes = within(choice).getAllByRole('button')
+    expect(keuzes.map((b) => b.textContent)).toEqual([
+      'Google Agenda',
+      'Outlook (privé)',
+      'Outlook (werk)',
+      'Andere agenda',
+      'Delen…',
+      'Per item kiezen',
+    ])
+    expect(keuzes.every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true)
+    await user.click(within(choice).getByRole('button', { name: 'Per item kiezen' }))
+    expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes.h.agenda).toBe('per-item')
+
+    for (const [tekst, agenda, host] of [
+      ['Tandarts', 'Google Agenda', 'calendar.google.com'],
+      ['APK', 'Outlook (privé)', 'outlook.live.com'],
+    ]) {
+      await agendaButton(user, tekst)
+      await user.click(screen.getByRole('button', { name: 'In agenda zetten' }))
+      const vraag = screen.getByRole('region', { name: 'Agenda kiezen' })
+      expect(within(vraag).getByText('In welke agenda?')).toBeInTheDocument()
+      expect(within(vraag).getByText('Kies waar je dit item ook op wilt nemen.')).toBeInTheDocument()
+      await user.click(within(vraag).getByRole('button', { name: agenda }))
+      expect(new URL(open.mock.lastCall![0]).hostname).toBe(host)
+    }
+    expect(JSON.parse(localStorage.getItem(HERINNERINGEN_KEY)!).lijstjes.h.agenda).toBe('per-item')
+    await user.click(screen.getByRole('button', { name: 'Agenda van dit lijstje' }))
+    expect(screen.getByRole('button', { name: 'Per item kiezen' })).toHaveAttribute('aria-pressed', 'true')
+  })
+})

@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
 import { ArrowLeft, Bell, BellOff, CalendarCheck, CalendarDays, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
-import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
+import { AGENDAS, formatWanneer, isVoorbij, opDatum, PER_ITEM, type AgendaKeuze } from './agenda'
 import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
@@ -30,7 +30,7 @@ interface Props {
   /** Herinneringslijstje: datum en tijd van een item wijzigen, of weghalen met `null` (F33). */
   onWhen: (id: string, wanneer: string | null) => void
   /** Herinneringslijstje: de agenda van het lijstje kiezen en, met een item, dat item erin zetten (F34). */
-  onAgenda: (agenda: Agenda | null, itemId: string | null, wanneer?: string) => void
+  onAgenda: (agenda: AgendaKeuze | null, itemId: string | null, wanneer?: string) => void
   /** Van een gewoon lijstje een herinneringslijstje maken, of de herinnering uitzetten (F38). */
   onHerinnering: (aan: boolean) => void
   /** De melding met herinneringen (F36). */
@@ -266,12 +266,13 @@ export default function ListView({
     setDating(null)
     onWhen(id, waarde || null)
     if (enAgenda && waarde) {
-      if (lijstje.agenda) onAgenda(lijstje.agenda, id, waarde)
+      // Een vaste agenda: meteen erin; nog niets gekozen of Per item kiezen: eerst vragen welke (F34).
+      if (lijstje.agenda && lijstje.agenda !== PER_ITEM) onAgenda(lijstje.agenda, id, waarde)
       else setChoosing({ voor: id })
     }
   }
 
-  function choose(agenda: Agenda) {
+  function choose(agenda: AgendaKeuze) {
     const voor = choosing?.voor ?? null
     setChoosing(null)
     onAgenda(agenda, voor)
@@ -453,41 +454,55 @@ export default function ListView({
         )}
         {choosing && (
           <section className="confirm clear-choice agenda-choice" aria-label="Agenda kiezen">
-            <strong>{choosing.voor ? 'In welke agenda?' : `Herinneringen voor ${lijstje.naam}`}</strong>
-            <p>
-              Herinneringen worden altijd in Lijstjes getoond. Kies hieronder waar je ze ook op wilt nemen. Je keuze geldt alleen
-              voor dit lijstje ({lijstje.naam}).
-            </p>
-            {!choosing.voor && (
-              // De herinnering uitzetten maakt er weer een gewoon lijstje van (F38).
-              <label className="herinnering-switch">
-                <span>Herinnering</span>
+            <div className="agenda-choice-head">
+              <strong>{choosing.voor ? 'In welke agenda?' : `Herinneringen voor ${lijstje.naam}`}</strong>
+              {!choosing.voor && (
+                // Het schuifje rechts naast de titel: uitzetten maakt er weer een gewoon lijstje van (F38).
                 <input
                   type="checkbox"
                   role="switch"
+                  className="herinnering-switch"
+                  aria-label="Herinnering"
                   checked
                   onChange={() => {
                     setChoosing(null)
                     onHerinnering(false)
                   }}
                 />
-              </label>
-            )}
+              )}
+            </div>
+            <p>
+              {choosing.voor && lijstje.agenda === PER_ITEM
+                ? 'Kies waar je dit item ook op wilt nemen.'
+                : `Herinneringen worden altijd in Lijstjes getoond. Kies hieronder waar je ze ook op wilt nemen. Je keuze geldt alleen voor dit lijstje (${lijstje.naam}).`}
+            </p>
             <div className="confirm-buttons">
               {AGENDAS.map((a) => (
                 <button
                   key={a.id}
                   type="button"
-                  className={lijstje.agenda === a.id ? 'confirm-yes' : undefined}
-                  aria-pressed={lijstje.agenda === a.id}
+                  className={!choosing.voor && lijstje.agenda === a.id ? 'confirm-yes' : undefined}
+                  aria-pressed={!choosing.voor ? lijstje.agenda === a.id : undefined}
                   onClick={() => choose(a.id)}
                 >
                   {a.label}
                 </button>
               ))}
-              <button type="button" className="cancel-half" onClick={() => setChoosing(null)}>
-                Annuleren
-              </button>
+              {choosing.voor ? (
+                <button type="button" className="cancel-half" onClick={() => setChoosing(null)}>
+                  Annuleren
+                </button>
+              ) : (
+                // Geen vaste agenda: bij elk item vragen welke (F34). Precies één van de zes is gekozen.
+                <button
+                  type="button"
+                  className={lijstje.agenda === PER_ITEM ? 'confirm-yes' : undefined}
+                  aria-pressed={lijstje.agenda === PER_ITEM}
+                  onClick={() => choose(PER_ITEM)}
+                >
+                  Per item kiezen
+                </button>
+              )}
             </div>
           </section>
         )}

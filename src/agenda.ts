@@ -16,6 +16,18 @@ export function isAgenda(value: unknown): value is Agenda {
   return AGENDAS.some((a) => a.id === value)
 }
 
+/**
+ * De keuze van een herinneringslijstje: een vaste agenda, of per item kiezen (F34). Zonder keuze is er nog niets
+ * gekozen; de eerste keer in de agenda zetten vraagt dan welke agenda.
+ */
+export type AgendaKeuze = Agenda | 'per-item'
+
+export const PER_ITEM = 'per-item' as const
+
+export function isAgendaKeuze(value: unknown): value is AgendaKeuze {
+  return value === PER_ITEM || isAgenda(value)
+}
+
 export function agendaLabel(agenda: Agenda): string {
   return AGENDAS.find((a) => a.id === agenda)?.label ?? agenda
 }
