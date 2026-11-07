@@ -779,3 +779,100 @@ h2 {
 .lists-screen .add-item:not(:has(.mic)) {
   padding-right: 8px;
 }
+
+/* ---- Herinneringslijstjes (F32 t/m F35) ---- */
+
+/* Tekst en daaronder datum en tijd. */
+.item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-body .item-text,
+.item-body .item-edit {
+  flex: none;
+}
+
+.item-body:has(.item-when) .item-text {
+  min-height: 0;
+  padding: 7px 4px 0;
+}
+
+.item-body:has(.item-when) .item-edit input {
+  margin-bottom: 0;
+}
+
+/* Datum en tijd: tik erop en de datumkiezer van de telefoon gaat open (F33). */
+.item-when {
+  position: relative;
+  align-self: flex-start;
+  min-height: 26px;
+  padding: 1px 4px 7px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.item-when.no-date {
+  color: var(--muted);
+}
+
+.item-when.past {
+  color: #b91c1c;
+}
+
+.item.done .item-when {
+  color: var(--muted);
+}
+
+.item-when input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+/* Het agenda-knopje: blauw als het item met deze datum en tijd in je agenda staat (F34). */
+.item-agenda.placed {
+  color: var(--accent);
+}
+
+.item-agenda:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.agenda-choice p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Het belletje bij Nieuw lijstje: wit met grijs belletje, aan is blauw gevuld (F32). */
+.add-item .bell {
+  width: 32px;
+  height: 32px;
+  margin-left: 6px;
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.lists-screen .add-item:not(:has(.mic)) .bell {
+  margin-right: 0;
+}
+
+.add-item .bell.on {
+  background: var(--accent);
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+.list-bell {
+  flex-shrink: 0;
+  color: var(--accent);
+}

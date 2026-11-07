@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent, type TouchEvent } from 'react'
-import { ArrowLeft, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
 import { limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
@@ -9,7 +10,8 @@ const SWIPE_DELETE = 80
 // Pas na zoveel pixels beslissen we of de vinger horizontaal (vegen) of verticaal (scrollen) beweegt.
 const SWIPE_LOCK = 10
 
-export type Notice = { kind: 'ok' | 'error'; text: string }
+/** Een melding onderaan; `vast` blijft staan tot je hem sluit (F35). */
+export type Notice = { kind: 'ok' | 'error'; text: string; vast?: boolean }
 
 interface Props {
   lijstje: Lijstje
@@ -25,6 +27,10 @@ interface Props {
   onDeleteList: (() => void) | null
   onBack: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
+  /** Herinneringslijstje: datum en tijd van een item wijzigen, of weghalen met `null` (F33). */
+  onWhen: (id: string, wanneer: string | null) => void
+  /** Herinneringslijstje: de agenda van het lijstje kiezen en, met een item, dat item erin zetten (F34). */
+  onAgenda: (agenda: Agenda | null, itemId: string | null) => void
 }
 
 interface RowProps {
@@ -36,13 +42,19 @@ interface RowProps {
   onEdit: (text: string) => void
   onRemove: () => void
   grip: Grip
+  /** In een herinneringslijstje: datum en tijd onder de tekst en een agenda-knopje (F33, F34). */
+  herinnering: boolean
+  onWhen: (wanneer: string | null) => void
+  onAgenda: () => void
 }
 
 /**
  * Eén item: vastpakken om te verplaatsen (F28), het rondje om af te vinken (F6), de tekst om aan te passen (F27),
  * het kruisje of naar links vegen om weg te gooien (F7).
  */
-function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip }: RowProps) {
+function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, herinnering, onWhen, onAgenda }: RowProps) {
+  // Staat het item met deze datum en tijd in de agenda (F34)?
+  const inAgenda = Boolean(item.wanneer && item.inAgenda === item.wanneer)
   const [dx, setDx] = useState(0)
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(item.tekst)
@@ -107,43 +119,82 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip }: Ro
         setDx(0)
       }}
     >
-      <button
-        type="button"
-        className="item-grip"
-        aria-label={`${item.tekst} verplaatsen`}
-        aria-description="Sleep omhoog of omlaag, of gebruik de pijltjestoetsen"
-        // Vastpakken is geen vegen om weg te gooien.
-        onTouchStart={(e) => e.stopPropagation()}
-        {...grip}
-      >
-        <GripVertical size={18} strokeWidth={1.75} aria-hidden />
-      </button>
+      {herinnering ? (
+        // Een herinneringslijstje staat op datum; verplaatsen kan daar niet (F33).
+        <span className="item-grip" aria-hidden />
+      ) : (
+        <button
+          type="button"
+          className="item-grip"
+          aria-label={`${item.tekst} verplaatsen`}
+          aria-description="Sleep omhoog of omlaag, of gebruik de pijltjestoetsen"
+          // Vastpakken is geen vegen om weg te gooien.
+          onTouchStart={(e) => e.stopPropagation()}
+          {...grip}
+        >
+          <GripVertical size={18} strokeWidth={1.75} aria-hidden />
+        </button>
+      )}
       <button type="button" className="item-check" aria-label={item.tekst} aria-pressed={item.af} onClick={onToggle}>
         <span className="check" aria-hidden>
           {item.af && <Check size={16} strokeWidth={2.5} />}
         </span>
       </button>
-      {editing ? (
-        <form className="item-edit" onSubmit={save}>
-          <input
-            type="text"
-            aria-label="Item aanpassen"
-            enterKeyHint="done"
-            autoComplete="off"
-            autoFocus
-            maxLength={MAX_TEKST}
-            value={text}
-            // Ook hier zelf afkappen: het toetsenbord van Android houdt zich niet altijd aan maxLength (F27).
-            onChange={(e) => setText(e.target.value.slice(0, MAX_TEKST))}
-            onBlur={() => save()}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setEditing(false)
-            }}
-          />
-        </form>
-      ) : (
-        <button type="button" className="item-text" aria-label={`${item.tekst} aanpassen`} onClick={startEditing}>
-          {item.tekst}
+      <div className="item-body">
+        {editing ? (
+          <form className="item-edit" onSubmit={save}>
+            <input
+              type="text"
+              aria-label="Item aanpassen"
+              enterKeyHint="done"
+              autoComplete="off"
+              autoFocus
+              maxLength={MAX_TEKST}
+              value={text}
+              // Ook hier zelf afkappen: het toetsenbord van Android houdt zich niet altijd aan maxLength (F27).
+              onChange={(e) => setText(e.target.value.slice(0, MAX_TEKST))}
+              onBlur={() => save()}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setEditing(false)
+              }}
+            />
+          </form>
+        ) : (
+          <button type="button" className="item-text" aria-label={`${item.tekst} aanpassen`} onClick={startEditing}>
+            {item.tekst}
+          </button>
+        )}
+        {herinnering && (
+          // Tik op de datum en de datumkiezer van de telefoon gaat open (F33). Rechts op deze regel is ruimte
+          // gelaten voor een microfoon, om later datum en tijd in te spreken.
+          <span
+            className={['item-when', !item.wanneer && 'no-date', item.wanneer && isVoorbij(item.wanneer) && 'past']
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <span aria-hidden>{item.wanneer ? formatWanneer(item.wanneer) : 'Datum kiezen'}</span>
+            <input
+              type="datetime-local"
+              aria-label={`Datum en tijd van ${item.tekst}`}
+              value={item.wanneer ?? ''}
+              onChange={(e) => onWhen(e.target.value || null)}
+            />
+          </span>
+        )}
+      </div>
+      {herinnering && (
+        <button
+          type="button"
+          className={inAgenda ? 'item-delete item-agenda placed' : 'item-delete item-agenda'}
+          aria-label={inAgenda ? `${item.tekst} staat in je agenda; opnieuw in agenda zetten` : `${item.tekst} in agenda zetten`}
+          disabled={!item.wanneer}
+          onClick={onAgenda}
+        >
+          {inAgenda ? (
+            <CalendarCheck size={18} strokeWidth={1.75} aria-hidden />
+          ) : (
+            <CalendarPlus size={18} strokeWidth={1.75} aria-hidden />
+          )}
         </button>
       )}
       <button type="button" className="item-delete" aria-label={`${item.tekst} weggooien`} onClick={onRemove}>
@@ -167,13 +218,19 @@ export default function ListView({
   onDeleteList,
   onBack,
   mic,
+  onWhen,
+  onAgenda,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
-  const items = lijstje.items
+  // De keuze van de agenda: `voor` is het item dat daarna in de agenda gaat, of `null` bij het belletje (F34).
+  const [choosing, setChoosing] = useState<{ voor: string | null } | null>(null)
+  const herinnering = lijstje.herinnering === true
+  // Een herinneringslijstje staat op datum (F33).
+  const items = herinnering ? opDatum(lijstje.items) : lijstje.items
   const hasDone = items.some((i) => i.af)
   const input = useRef<HTMLInputElement>(null)
-  const scroll = useScrollList(items, onMove)
+  const scroll = useScrollList(items, herinnering ? () => {} : onMove)
   const { header, list, addRow, bottom, hidden } = scroll
 
   function submit(e: FormEvent) {
@@ -189,6 +246,19 @@ export default function ListView({
     setClearing(false)
   }
 
+  /** Het agenda-knopje van een item: met een gekozen agenda meteen erin, anders eerst kiezen (F34). */
+  function agendaFor(id: string) {
+    setClearing(false)
+    if (lijstje.agenda) onAgenda(lijstje.agenda, id)
+    else setChoosing({ voor: id })
+  }
+
+  function choose(agenda: Agenda) {
+    const voor = choosing?.voor ?? null
+    setChoosing(null)
+    onAgenda(agenda, voor)
+  }
+
   return (
     <main className="app list-screen">
       <header ref={header} className="list-header">
@@ -197,13 +267,30 @@ export default function ListView({
         </button>
         <h1>{lijstje.naam}</h1>
         <div className="header-actions">
+          {herinnering && (
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Agenda van dit lijstje"
+              aria-expanded={choosing !== null}
+              onClick={() => {
+                setClearing(false)
+                setChoosing(choosing ? null : { voor: null })
+              }}
+            >
+              <Bell size={20} strokeWidth={1.75} aria-hidden />
+            </button>
+          )}
           <button
             type="button"
             className="icon-button"
             aria-label="Lijstje weggooien"
             aria-expanded={clearing}
             disabled={items.length === 0 && !onDeleteList}
-            onClick={() => setClearing(!clearing)}
+            onClick={() => {
+              setChoosing(null)
+              setClearing(!clearing)
+            }}
           >
             <Trash2 size={20} strokeWidth={1.75} aria-hidden />
           </button>
@@ -223,6 +310,28 @@ export default function ListView({
                 Items én het lijstje weggooien
               </button>
               <button type="button" className="cancel" onClick={() => setClearing(false)}>
+                Annuleren
+              </button>
+            </div>
+          </section>
+        )}
+        {choosing && (
+          <section className="confirm clear-choice agenda-choice" aria-label="Agenda kiezen">
+            <strong>{choosing.voor ? 'In welke agenda?' : `Agenda voor ${lijstje.naam}`}</strong>
+            <p>{lijstje.naam} onthoudt je keuze.</p>
+            <div className="confirm-buttons">
+              {AGENDAS.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  className={lijstje.agenda === a.id ? 'confirm-yes' : undefined}
+                  aria-pressed={lijstje.agenda === a.id}
+                  onClick={() => choose(a.id)}
+                >
+                  {a.label}
+                </button>
+              ))}
+              <button type="button" className="cancel-half" onClick={() => setChoosing(null)}>
                 Annuleren
               </button>
             </div>
@@ -254,6 +363,9 @@ export default function ListView({
             onEdit={(t) => onEdit(item.id, t)}
             onRemove={() => onRemove(item.id)}
             grip={scroll.gripFor(item.id, index)}
+            herinnering={herinnering}
+            onWhen={(w) => onWhen(item.id, w)}
+            onAgenda={() => agendaFor(item.id)}
           />
         ))}
         {/* De invoerregel staat als laatste regel in het lijstje (F3, F15). */}

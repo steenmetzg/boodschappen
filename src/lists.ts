@@ -1,5 +1,6 @@
 // De lijstjes en hun items: de gegevens, bewaren en ophalen, en de regels voor toevoegen (F3 t/m F5).
 
+import { isAgenda, isWanneer, type Agenda } from './agenda'
 import { KEY_PREFIX } from './storageKey'
 
 export interface Item {
@@ -7,17 +8,36 @@ export interface Item {
   tekst: string
   /** Afgevinkt (F6): doorgestreept, maar het item blijft op zijn plek staan. */
   af: boolean
+  /** Herinneringslijstje: datum en tijd, bijv. "2026-11-08T14:00" (F33). */
+  wanneer?: string
+  /** Herinneringslijstje: de datum en tijd waarmee het item in de agenda is gezet (F34, F35). */
+  inAgenda?: string
 }
 
 export interface Lijstje {
   id: string
   naam: string
   items: Item[]
+  /** Een herinneringslijstje: items met datum en tijd die je in je agenda zet (F32). */
+  herinnering?: boolean
+  /** De agenda van dit herinneringslijstje, gekozen bij de eerste keer in de agenda zetten (F34). */
+  agenda?: Agenda
 }
 
 /** Alle sleutels beginnen met "lijstjes-", omdat WoonWerk dezelfde opslag van de browser deelt (AC16). */
 export const LISTS_KEY = `${KEY_PREFIX}data`
 export const CURRENT_KEY = `${KEY_PREFIX}huidig`
+/**
+ * Wat bij herinneringslijstjes hoort (F32 t/m F35) staat apart van de lijstjes zelf. Een oudere versie van de app
+ * (1.3 en eerder) kijkt hier niet naar en ziet een herinneringslijstje als gewoon lijstje; met een nieuwere versie
+ * komen de datums terug (§8).
+ */
+export const HERINNERINGEN_KEY = `${KEY_PREFIX}herinneringen`
+
+export interface Herinneringen {
+  lijstjes: Record<string, { agenda?: Agenda }>
+  items: Record<string, { wanneer?: string; inAgenda?: string }>
+}
 
 export const MAX_NAAM = 30
 export const MAX_TEKST = 60
@@ -152,11 +172,64 @@ export function parseLijstjes(value: unknown): Lijstje[] | null {
   return result.length > 0 ? result : null
 }
 
+/** De lijstjes zoals versie 1.3 ze kent: alleen id, naam en items met id, tekst en af (§8). */
+export function basisLijstjes(lijstjes: readonly Lijstje[]): Lijstje[] {
+  return lijstjes.map((l) => ({ id: l.id, naam: l.naam, items: l.items.map((i) => ({ id: i.id, tekst: i.tekst, af: i.af })) }))
+}
+
+/** Wat bij de herinneringslijstjes hoort, om apart te bewaren (§8). */
+export function splitHerinneringen(lijstjes: readonly Lijstje[]): Herinneringen {
+  const result: Herinneringen = { lijstjes: {}, items: {} }
+  for (const l of lijstjes) {
+    if (!l.herinnering) continue
+    result.lijstjes[l.id] = l.agenda ? { agenda: l.agenda } : {}
+    for (const i of l.items) {
+      if (!i.wanneer && !i.inAgenda) continue
+      result.items[i.id] = { ...(i.wanneer && { wanneer: i.wanneer }), ...(i.inAgenda && { inAgenda: i.inAgenda }) }
+    }
+  }
+  return result
+}
+
+/** Zet de apart bewaarde herinneringen terug bij de lijstjes; onbruikbare gegevens worden genegeerd. */
+export function mergeHerinneringen(lijstjes: Lijstje[], value: unknown): Lijstje[] {
+  if (typeof value !== 'object' || value === null) return lijstjes
+  const h = value as Partial<Herinneringen>
+  const lists = typeof h.lijstjes === 'object' && h.lijstjes !== null ? h.lijstjes : {}
+  const items = typeof h.items === 'object' && h.items !== null ? h.items : {}
+  return lijstjes.map((l) => {
+    if (!Object.hasOwn(lists, l.id)) return l
+    const agenda = (lists[l.id] as { agenda?: unknown } | null)?.agenda
+    return {
+      ...l,
+      herinnering: true,
+      ...(isAgenda(agenda) && { agenda }),
+      items: l.items.map((i) => {
+        const extra = Object.hasOwn(items, i.id) ? (items[i.id] as { wanneer?: unknown; inAgenda?: unknown } | null) : null
+        if (!extra) return i
+        return {
+          ...i,
+          ...(isWanneer(extra.wanneer) && { wanneer: extra.wanneer }),
+          ...(isWanneer(extra.inAgenda) && { inAgenda: extra.inAgenda }),
+        }
+      }),
+    }
+  })
+}
+
 export function loadLijstjes(): Lijstje[] {
   try {
     const raw = localStorage.getItem(LISTS_KEY)
     if (!raw) return DEFAULT_LIJSTJES
-    return parseLijstjes(JSON.parse(raw)) ?? DEFAULT_LIJSTJES
+    const lijstjes = parseLijstjes(JSON.parse(raw))
+    if (!lijstjes) return DEFAULT_LIJSTJES
+    let herinneringen: unknown = null
+    try {
+      herinneringen = JSON.parse(localStorage.getItem(HERINNERINGEN_KEY) ?? 'null')
+    } catch {
+      // Beschadigde herinneringen: de lijstjes zelf zijn er nog.
+    }
+    return mergeHerinneringen(lijstjes, herinneringen)
   } catch {
     return DEFAULT_LIJSTJES
   }
@@ -164,9 +237,24 @@ export function loadLijstjes(): Lijstje[] {
 
 export function saveLijstjes(lijstjes: Lijstje[]): void {
   try {
-    localStorage.setItem(LISTS_KEY, JSON.stringify(lijstjes))
+    localStorage.setItem(LISTS_KEY, JSON.stringify(basisLijstjes(lijstjes)))
+    localStorage.setItem(HERINNERINGEN_KEY, JSON.stringify(splitHerinneringen(lijstjes)))
   } catch {
     // Opslag niet beschikbaar (bijv. privévenster); de app werkt dan zonder onthouden.
+  }
+}
+
+/** Geeft een item een datum en tijd, of haalt die weg met `null` (F33). */
+export function setWanneer(lijstje: Lijstje, id: string, wanneer: string | null): Lijstje {
+  return {
+    ...lijstje,
+    items: lijstje.items.map((i) => {
+      if (i.id !== id) return i
+      // Een andere tijd: het item staat niet meer (met de goede tijd) in de agenda (F35).
+      const { id: itemId, tekst, af, inAgenda } = i
+      const nieuw = wanneer && isWanneer(wanneer) ? wanneer : undefined
+      return { id: itemId, tekst, af, ...(nieuw && { wanneer: nieuw }), ...(inAgenda && inAgenda === nieuw && { inAgenda }) }
+    }),
   }
 }
 
