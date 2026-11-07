@@ -55,6 +55,23 @@ interface RowProps {
 function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, herinnering, onWhen, onAgenda }: RowProps) {
   // Staat het item met deze datum en tijd in de agenda (F34)?
   const inAgenda = Boolean(item.wanneer && item.inAgenda === item.wanneer)
+  const dateInput = useRef<HTMLInputElement>(null)
+
+  /** Het agenda-knopje: zonder datum eerst de datumkiezer, anders in de agenda (F34). */
+  function agendaClick() {
+    if (item.wanneer) {
+      onAgenda()
+      return
+    }
+    const input = dateInput.current
+    if (!input) return
+    try {
+      input.showPicker()
+    } catch {
+      input.focus()
+      input.click()
+    }
+  }
   const [dx, setDx] = useState(0)
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(item.tekst)
@@ -174,6 +191,7 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, heri
           >
             <span aria-hidden>{item.wanneer ? formatWanneer(item.wanneer) : 'Datum kiezen'}</span>
             <input
+              ref={dateInput}
               type="datetime-local"
               aria-label={`Datum en tijd van ${item.tekst}`}
               value={item.wanneer ?? ''}
@@ -187,8 +205,7 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, heri
           type="button"
           className={inAgenda ? 'item-delete item-agenda placed' : 'item-delete item-agenda'}
           aria-label={inAgenda ? `${item.tekst} staat in je agenda; opnieuw in agenda zetten` : `${item.tekst} in agenda zetten`}
-          disabled={!item.wanneer}
-          onClick={onAgenda}
+          onClick={agendaClick}
         >
           {inAgenda ? (
             <CalendarCheck size={18} strokeWidth={1.75} aria-hidden />

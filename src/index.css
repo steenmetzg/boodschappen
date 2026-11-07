@@ -815,7 +815,7 @@ h2 {
 }
 
 .item-when.no-date {
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .item-when.past {
@@ -842,9 +842,8 @@ h2 {
   color: var(--accent);
 }
 
-.item-agenda:disabled {
-  opacity: 0.35;
-  cursor: default;
+.item-agenda:not(.placed) {
+  color: var(--muted);
 }
 
 .agenda-choice p {

@@ -115,8 +115,13 @@ describe('AC27: in de agenda zetten', () => {
     storeAfspraken({ Tandarts: { wanneer: '2026-11-12T09:30' } })
     const user = userEvent.setup()
     render(<App />)
-    // Zonder datum kan het item niet in de agenda.
-    expect(screen.getByRole('button', { name: 'APK in agenda zetten' })).toBeDisabled()
+    // Zonder datum opent het agenda-knopje eerst de datumkiezer, zonder keuze van de agenda.
+    const showPicker = vi.fn()
+    ;(screen.getByLabelText('Datum en tijd van APK') as HTMLInputElement).showPicker = showPicker
+    await user.click(screen.getByRole('button', { name: 'APK in agenda zetten' }))
+    expect(showPicker).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('region', { name: 'Agenda kiezen' })).not.toBeInTheDocument()
+    expect(open).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Tandarts in agenda zetten' }))
     const choice = screen.getByRole('region', { name: 'Agenda kiezen' })
     expect(within(choice).getByText('In welke agenda?')).toBeInTheDocument()
