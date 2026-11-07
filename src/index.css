@@ -850,6 +850,11 @@ h2 {
   color: var(--muted);
 }
 
+.item-agenda:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .agenda-choice p,
 .date-choice p {
   margin: 2px 0 0;
@@ -962,4 +967,32 @@ span.item-grip {
 
 .date-clear:disabled {
   opacity: 0.35;
+}
+
+/* Een herinnering afvinken met het rondje, net als op een lijstje (F36). */
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice .reminder-check {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+
+.reminder-check .check {
+  width: 20px;
+  height: 20px;
+}
+
+.voice .reminder {
+  flex: 1;
+  min-width: 0;
 }

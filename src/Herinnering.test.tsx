@@ -266,11 +266,21 @@ describe('AC30: herinneringen in de app', () => {
     expect(lines.map((b) => b.textContent)).toEqual(['do 5 nov 09:00 Anne bellen (Afspraken)', 'Vandaag 16:00 Tandarts (Afspraken)'])
     expect(lines[0]).toHaveClass('past')
     expect(lines[1]).not.toHaveClass('past')
-    // Afvinken haalt het item uit de melding.
-    await user.click(screen.getByRole('button', { name: 'Tandarts' }))
+    // Afvinken in de melding vinkt het item af op het lijstje en haalt het uit de melding.
+    await user.click(within(box).getByRole('button', { name: 'Tandarts afvinken' }))
     expect(within(box).queryByText('Tandarts')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tandarts' })).toHaveAttribute('aria-pressed', 'true')
+    // Een afgevinkt item kan niet in de agenda.
+    expect(screen.getByRole('button', { name: 'Tandarts in agenda zetten' })).toBeDisabled()
+    // Afvinken op het lijstje haalt het ook uit de melding.
+    await user.click(screen.getByRole('button', { name: 'Anne bellen' }))
+    expect(within(box).queryByText('Anne bellen')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Anne bellen' }))
     // Sluiten: weg, tot je de app weer opent of terugkomt in de app.
-    await user.click(within(box).getByRole('button', { name: 'Herinneringen sluiten' }))
+    // Anne bellen staat weer in de melding (die opnieuw verscheen toen hij even leeg was).
+    const again = screen.getByRole('region', { name: 'Herinneringen' })
+    expect(within(again).getByText('Anne bellen')).toBeInTheDocument()
+    await user.click(within(again).getByRole('button', { name: 'Herinneringen sluiten' }))
     expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
     fireEvent(document, new Event('visibilitychange'))
@@ -283,7 +293,7 @@ describe('AC30: herinneringen in de app', () => {
     const user = userEvent.setup()
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Mijn lijstjes' })).toBeInTheDocument()
-    await user.click(within(screen.getByRole('region', { name: 'Herinneringen' })).getByRole('button', { name: /Tandarts/ }))
+    await user.click(within(screen.getByRole('region', { name: 'Herinneringen' })).getByRole('button', { name: /^Vandaag/ }))
     expect(screen.getByRole('heading', { name: 'Afspraken' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Herinneringen' })).not.toBeInTheDocument()
   })

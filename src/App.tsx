@@ -67,6 +67,9 @@ export default function App() {
           setShowReminders(false)
           openList(id)
         }}
+        onToggle={(lijstjeId, itemId) =>
+          update(lijstjeId, (l) => ({ ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, af: true } : i)) }))
+        }
         onClose={() => setShowReminders(false)}
       />
     ) : null

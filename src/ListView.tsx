@@ -177,7 +177,8 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, heri
           type="button"
           className={inAgenda ? 'item-delete item-agenda placed' : 'item-delete item-agenda'}
           aria-label={inAgenda ? `${item.tekst} staat in je agenda; datum wijzigen` : `${item.tekst} in agenda zetten`}
-          // Altijd eerst het vak met datum en tijd; van daaruit in de agenda (F34).
+          // Altijd eerst het vak met datum en tijd; van daaruit in de agenda (F34). Afgevinkt: niet meer nodig.
+          disabled={item.af}
           onClick={onDate}
         >
           {inAgenda ? (
