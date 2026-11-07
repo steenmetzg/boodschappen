@@ -15,9 +15,13 @@ import {
   newId,
   saveCurrent,
   saveLijstjes,
+  setWanneer,
   splitTyped,
   type Lijstje,
 } from './lists'
+import { zetInAgenda, type Agenda } from './agenda'
+import Reminders from './Reminders'
+import { dueItems } from './reminders'
 import Settings from './Settings'
 import { loadSpeechEnabled, saveSpeechEnabled, speechSupported, bestSpoken, spokenName, useSpeech } from './speech'
 
@@ -34,6 +38,8 @@ export default function App() {
   // Een lijstje dat vanuit dat lijstje zelf is weggegooid; Mijn lijstjes toont dan Ongedaan maken (F8, F12).
   const [justDeleted, setJustDeleted] = useState<Deleted | null>(null)
   const [speechEnabled, setSpeechEnabled] = useState(loadSpeechEnabled)
+  // Het belletje bij Nieuw lijstje: het volgende lijstje wordt een herinneringslijstje (F32).
+  const [nieuwHerinnering, setNieuwHerinnering] = useState(false)
   const installPrompt = useInstallPrompt()
   const speech = useSpeech(
     // Op Mijn lijstjes is wat je zegt de naam van een nieuw lijstje (F31), op een lijstje zijn het items (F15).
@@ -41,6 +47,32 @@ export default function App() {
     (text) => setNotice({ kind: 'error', text }),
   )
   const lijstje = lijstjes.find((l) => l.id === huidig) ?? lijstjes[0]
+  // Herinneringen (F36): bij het openen van de app, en als je terugkomt in de app, tot je ze sluit.
+  const [showReminders, setShowReminders] = useState(true)
+  const due = showReminders ? dueItems(lijstjes) : []
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') setShowReminders(true)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  const reminders =
+    due.length > 0 ? (
+      <Reminders
+        due={due}
+        onOpen={(id) => {
+          setShowReminders(false)
+          openList(id)
+        }}
+        onToggle={(lijstjeId, itemId) =>
+          update(lijstjeId, (l) => ({ ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, af: true } : i)) }))
+        }
+        onClose={() => setShowReminders(false)}
+      />
+    ) : null
 
   useEffect(() => saveLijstjes(lijstjes), [lijstjes])
   useEffect(() => {
@@ -49,7 +81,7 @@ export default function App() {
   useEffect(() => saveSpeechEnabled(speechEnabled), [speechEnabled])
 
   useEffect(() => {
-    if (!notice) return
+    if (!notice || notice.vast) return
     const timer = setTimeout(() => setNotice(null), NOTICE_MS)
     return () => clearTimeout(timer)
   }, [notice])
@@ -78,7 +110,8 @@ export default function App() {
 
   function create(naam: string) {
     const id = newId()
-    setLijstjes((all) => [...all, { id, naam, items: [] }])
+    setLijstjes((all) => [...all, { id, naam, items: [], ...(nieuwHerinnering && { herinnering: true }) }])
+    setNieuwHerinnering(false)
     openList(id)
   }
 
@@ -108,6 +141,38 @@ export default function App() {
       return copy
     })
     if (wasCurrent) setHuidig(back.id)
+  }
+
+  /** Een andere datum of tijd; stond het item al in de agenda, dan moet je dat oude agenda-item zelf weghalen (F35). */
+  function changeWhen(id: string, wanneer: string | null) {
+    const item = lijstje.items.find((i) => i.id === id)
+    update(lijstje.id, (l) => setWanneer(l, id, wanneer))
+    if (item?.inAgenda && item.inAgenda !== wanneer) {
+      setNotice({
+        kind: 'error',
+        vast: true,
+        text: `${item.tekst} staat nog met de oude datum en tijd in je agenda. Verwijder dat agenda-item zelf.`,
+      })
+    }
+  }
+
+  /** Kiest de agenda van het lijstje en zet zo nodig een item erin (F34). */
+  function agenda(keuze: Agenda | null, itemId: string | null, nieuweDatum?: string) {
+    const l = lijstje
+    if (keuze && keuze !== l.agenda) update(l.id, (x) => ({ ...x, agenda: keuze }))
+    const item = l.items.find((i) => i.id === itemId)
+    const welke = keuze ?? l.agenda
+    // Net bewaard in het vak met datum en tijd: die datum, ook al staat hij nog niet in `lijstje`.
+    const wanneer = nieuweDatum ?? item?.wanneer
+    if (!item || !wanneer || !welke) return
+    // Niet wachten vóór het openen: anders houdt de browser het nieuwe venster tegen.
+    void zetInAgenda(welke, { id: item.id, titel: item.tekst, lijstje: l.naam, wanneer }).then((ok) => {
+      if (ok) {
+        update(l.id, (x) => ({ ...x, items: x.items.map((i) => (i.id === item.id && i.wanneer === wanneer ? { ...i, inAgenda: wanneer } : i)) }))
+      } else if (welke === 'delen' && typeof navigator.share !== 'function') {
+        setNotice({ kind: 'error', text: 'Delen kan niet op deze telefoon. Kies een andere agenda met het belletje.' })
+      }
+    })
   }
 
   if (screen === 'settings') {
@@ -151,6 +216,9 @@ export default function App() {
         justDeleted={justDeleted}
         notice={notice}
         onCloseNotice={() => setNotice(null)}
+        reminders={reminders}
+        nieuwHerinnering={nieuwHerinnering}
+        onToggleHerinnering={() => setNieuwHerinnering(!nieuwHerinnering)}
       mic={{
         show: speechEnabled && speechSupported(),
         listening: speech.listening,
@@ -196,6 +264,9 @@ export default function App() {
         setNotice(null)
         setScreen('lijstjes')
       }}
+      reminders={reminders}
+      onWhen={changeWhen}
+      onAgenda={agenda}
       mic={{
         show: speechEnabled && speechSupported(),
         listening: speech.listening,

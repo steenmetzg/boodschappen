@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
-import { GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { Bell, GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import type { Notice } from './ListView'
 import { itemsText, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
@@ -33,6 +33,11 @@ interface Props {
   notice: Notice | null
   onCloseNotice: () => void
   mic: { show: boolean; listening: boolean; start: () => void; stop: () => void }
+  /** Het belletje bij Nieuw lijstje staat aan: het nieuwe lijstje wordt een herinneringslijstje (F32). */
+  nieuwHerinnering: boolean
+  onToggleHerinnering: () => void
+  /** De melding met herinneringen (F36). */
+  reminders?: ReactNode
 }
 
 interface RowProps {
@@ -139,6 +144,7 @@ function ListRow({
           aria-current={current ? 'true' : undefined}
           onClick={onOpen}
         >
+          {lijstje.herinnering && <Bell className="list-bell" size={15} strokeWidth={2} aria-label="Herinneringslijstje" />}
           <span className="list-name">{lijstje.naam}</span>
           {open > 0 && (
             <span className="count" aria-hidden>
@@ -188,6 +194,9 @@ export default function Lists({
   notice,
   onCloseNotice,
   mic,
+  nieuwHerinnering,
+  onToggleHerinnering,
+  reminders,
 }: Props) {
   const [naam, setNaam] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
@@ -286,7 +295,7 @@ export default function Lists({
             <input
               type="text"
               aria-label="Naam van het nieuwe lijstje"
-              placeholder="Nieuw lijstje"
+              placeholder={nieuwHerinnering ? 'Nieuw herinneringslijstje' : 'Nieuw lijstje'}
               enterKeyHint="go"
               autoComplete="off"
               maxLength={MAX_NAAM}
@@ -296,6 +305,15 @@ export default function Lists({
                 setError(null)
               }}
             />
+            <button
+              type="button"
+              className={nieuwHerinnering ? 'icon-button bell on' : 'icon-button bell'}
+              aria-label="Herinneringslijstje"
+              aria-pressed={nieuwHerinnering}
+              onClick={onToggleHerinnering}
+            >
+              <Bell size={16} strokeWidth={2} aria-hidden />
+            </button>
             {mic.show && (
               // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
               <button
@@ -313,6 +331,7 @@ export default function Lists({
       </ul>
 
       <div ref={bottom} className="bottom">
+        {reminders}
         {confirmDelete && (
           <ConfirmDialog
             title="Dit lijstje bevat items"

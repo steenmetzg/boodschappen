@@ -779,3 +779,229 @@ h2 {
 .lists-screen .add-item:not(:has(.mic)) {
   padding-right: 8px;
 }
+
+/* ---- Herinneringslijstjes (F32 t/m F35) ---- */
+
+/* Tekst en daaronder datum en tijd. */
+.item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-body .item-text,
+.item-body .item-edit {
+  flex: none;
+}
+
+.item-body:has(.item-when) .item-text {
+  min-height: 0;
+  padding: 7px 4px 0;
+}
+
+.item-body:has(.item-when) .item-edit input {
+  margin-bottom: 0;
+}
+
+/* Datum en tijd: tik erop om ze te wijzigen (F33). */
+.item-when {
+  align-self: flex-start;
+  min-height: 26px;
+  padding: 1px 4px 7px;
+  border: none;
+  font-size: 0.85rem;
+  text-align: left;
+  color: var(--accent);
+}
+
+.item-when.past {
+  color: #b91c1c;
+}
+
+.item.done .item-when {
+  color: var(--muted);
+}
+
+/* Het vak met datum en tijd in de titelbalk (F33, F34). */
+.date-choice input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 8px 0 2px;
+  padding: 0 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.date-choice input:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+/* Het agenda-knopje: blauw als het item met deze datum en tijd in je agenda staat (F34). */
+.item-agenda.placed {
+  color: var(--accent);
+}
+
+.item-agenda:not(.placed) {
+  color: var(--muted);
+}
+
+.item-agenda:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.agenda-choice p,
+.date-choice p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Het belletje bij Nieuw lijstje: wit met grijs belletje, aan is blauw gevuld (F32). */
+.add-item .bell {
+  width: 32px;
+  height: 32px;
+  margin-left: 6px;
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.lists-screen .add-item:not(:has(.mic)) .bell {
+  margin-right: 0;
+}
+
+.add-item .bell.on {
+  background: var(--accent);
+  box-shadow: var(--shadow-accent);
+  color: #ffffff;
+}
+
+.list-bell {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* Een lege plek voor de greep (invoerregel, herinneringslijstje): niets om vast te pakken. */
+span.item-grip {
+  cursor: default;
+  touch-action: auto;
+}
+
+/* Herinneringen bij het openen van de app (F36). */
+.voice.reminders {
+  align-items: flex-start;
+  /* Minder ruimte links, zodat de rondjes en het belletje dicht bij de streep staan. */
+  padding-left: 4px;
+}
+
+.reminders-body {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.reminders-body strong {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reminder-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.reminders-body ul {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.voice .reminder {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+  text-align: left;
+  white-space: normal;
+  font: inherit;
+}
+
+.reminder-when {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.reminder.past .reminder-when {
+  color: #b91c1c;
+}
+
+.reminder-list {
+  color: var(--muted);
+}
+
+/* Datumveld met rechts een kruisje om de datum weg te halen (F33). */
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 2px;
+}
+
+.date-field input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.date-clear {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  color: var(--muted);
+}
+
+.date-clear:disabled {
+  opacity: 0.35;
+}
+
+/* Een herinnering afvinken met het rondje, net als op een lijstje (F36). */
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice .reminder-check {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+
+.reminder-check .check {
+  width: 20px;
+  height: 20px;
+}
+
+.voice .reminder {
+  flex: 1;
+  min-width: 0;
+}
