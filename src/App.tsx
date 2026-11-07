@@ -265,6 +265,34 @@ export default function App() {
         setScreen('lijstjes')
       }}
       reminders={reminders}
+      onRename={(naam) => {
+        const problem = nameError(lijstjes, naam, lijstje.id)
+        if (problem) {
+          setNotice({ kind: 'error', text: problem })
+          return false
+        }
+        update(lijstje.id, (l) => ({ ...l, naam: naam.trim() }))
+        setNotice(null)
+        return true
+      }}
+      onHerinnering={(aan) => {
+        update(lijstje.id, (l) => ({ ...l, herinnering: aan }))
+        if (aan) {
+          setNotice({ kind: 'ok', text: `${lijstje.naam} is nu een herinneringslijstje. Kies een datum met het agenda-knopje.` })
+          return
+        }
+        // De datums blijven bewaard, voor als de herinnering weer aangaat; agenda-items blijven in de agenda (F38).
+        const inAgenda = lijstje.items.filter((i) => i.inAgenda).length
+        const agendaTekst =
+          inAgenda === 0
+            ? ''
+            : ` ${inAgenda === 1 ? '1 item staat' : `${inAgenda} items staan`} nog in je agenda; verwijder ${inAgenda === 1 ? 'het' : 'ze'} daar zelf als je ${inAgenda === 1 ? 'het' : 'ze'} niet meer nodig hebt.`
+        setNotice({
+          kind: 'ok',
+          text: `${lijstje.naam} is weer een gewoon lijstje. De datums blijven bewaard en komen terug als je de herinnering weer aanzet.${agendaTekst}`,
+          ...(inAgenda > 0 && { vast: true }),
+        })
+      }}
       onWhen={changeWhen}
       onAgenda={agenda}
       mic={{

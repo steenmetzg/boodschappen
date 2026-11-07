@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
-import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bell, BellOff, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
-import { limitTyped, MAX_TEKST, type Item, type Lijstje } from './lists'
+import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
 import { useScrollList, type Grip } from './scrollList'
 
@@ -31,8 +31,12 @@ interface Props {
   onWhen: (id: string, wanneer: string | null) => void
   /** Herinneringslijstje: de agenda van het lijstje kiezen en, met een item, dat item erin zetten (F34). */
   onAgenda: (agenda: Agenda | null, itemId: string | null, wanneer?: string) => void
+  /** Van een gewoon lijstje een herinneringslijstje maken, of de herinnering uitzetten (F38). */
+  onHerinnering: (aan: boolean) => void
   /** De melding met herinneringen (F36). */
   reminders?: ReactNode
+  /** Nieuwe naam voor het lijstje; `false` als die niet kan (de melding staat dan onderaan) (F37). */
+  onRename: (naam: string) => boolean
 }
 
 interface RowProps {
@@ -166,11 +170,14 @@ function ItemRow({ item, shift, dragging, onToggle, onEdit, onRemove, grip, heri
             {item.tekst}
           </button>
         )}
-        {herinnering && item.wanneer && (
+        {herinnering &&
           // Alleen tonen; wijzigen gaat via het agenda-knopje (F33). Rechts op deze regel is ruimte gelaten voor een
           // microfoon, om later datum en tijd in te spreken.
-          <span className={isVoorbij(item.wanneer) ? 'item-when past' : 'item-when'}>{formatWanneer(item.wanneer)}</span>
-        )}
+          (item.wanneer ? (
+            <span className={isVoorbij(item.wanneer) ? 'item-when past' : 'item-when'}>{formatWanneer(item.wanneer)}</span>
+          ) : (
+            <span className="item-when none">Geen datum</span>
+          ))}
       </div>
       {herinnering && (
         <button
@@ -212,9 +219,13 @@ export default function ListView({
   onWhen,
   onAgenda,
   reminders,
+  onRename,
+  onHerinnering,
 }: Props) {
   const [text, setText] = useState('')
   const [clearing, setClearing] = useState(false)
+  // De naam van het lijstje aanpassen door op de titel te tikken (F37).
+  const [naam, setNaam] = useState<string | null>(null)
   // De keuze van de agenda: `voor` is het item dat daarna in de agenda gaat, of `null` bij het belletje (F34).
   const [choosing, setChoosing] = useState<{ voor: string | null } | null>(null)
   // Het vak met datum en tijd van een item (F33): het item en de datum in het veld.
@@ -271,9 +282,49 @@ export default function ListView({
         <button type="button" className="back-button" aria-label="Terug naar Mijn lijstjes" onClick={onBack}>
           <ArrowLeft size={20} strokeWidth={1.75} aria-hidden />
         </button>
-        <h1>{lijstje.naam}</h1>
+        {naam === null ? (
+          <h1>
+            <button
+              type="button"
+              className="title-button"
+              aria-label={`Naam van ${lijstje.naam} wijzigen`}
+              onClick={() => setNaam(lijstje.naam)}
+            >
+              <span className="title-text">{lijstje.naam}</span>
+              <Pencil className="title-pencil" size={15} strokeWidth={1.75} aria-hidden />
+            </button>
+          </h1>
+        ) : (
+          <form
+            className="title-edit"
+            onSubmit={(e) => {
+              e.preventDefault()
+              // Enter: een goede naam bewaren; anders blijft het veld open met de melding onderaan (F37).
+              if (naam.trim() === lijstje.naam || onRename(naam)) setNaam(null)
+            }}
+          >
+            <input
+              type="text"
+              aria-label={`Nieuwe naam voor ${lijstje.naam}`}
+              enterKeyHint="done"
+              autoComplete="off"
+              autoFocus
+              maxLength={MAX_NAAM}
+              value={naam}
+              onChange={(e) => setNaam(e.target.value.slice(0, MAX_NAAM))}
+              onBlur={() => {
+                // Ergens anders tikken: een goede naam wordt bewaard, anders blijft de oude naam staan.
+                if (naam.trim() !== lijstje.naam) onRename(naam)
+                setNaam(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setNaam(null)
+              }}
+            />
+          </form>
+        )}
         <div className="header-actions">
-          {herinnering && (
+          {herinnering ? (
             <button
               type="button"
               className="icon-button"
@@ -286,6 +337,22 @@ export default function ListView({
               }}
             >
               <Bell size={20} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : (
+            // Een gewoon lijstje: met de doorgestreepte bel wordt het een herinneringslijstje (F38).
+            <button
+              type="button"
+              className="icon-button bell-off"
+              aria-label="Herinneringslijstje maken"
+              onClick={() => {
+                setClearing(false)
+                setDating(null)
+                onHerinnering(true)
+                // Meteen de agenda-keuze, met het schuifje om het weer uit te zetten (F38).
+                setChoosing({ voor: null })
+              }}
+            >
+              <BellOff size={20} strokeWidth={1.75} aria-hidden />
             </button>
           )}
           <button
@@ -367,8 +434,26 @@ export default function ListView({
         )}
         {choosing && (
           <section className="confirm clear-choice agenda-choice" aria-label="Agenda kiezen">
-            <strong>{choosing.voor ? 'In welke agenda?' : `Agenda voor ${lijstje.naam}`}</strong>
-            <p>{lijstje.naam} onthoudt je keuze.</p>
+            <strong>{choosing.voor ? 'In welke agenda?' : `Herinneringen voor ${lijstje.naam}`}</strong>
+            <p>
+              Herinneringen worden altijd in Lijstjes getoond. Kies hieronder waar je ze ook op wilt nemen. Je keuze geldt alleen
+              voor dit lijstje ({lijstje.naam}).
+            </p>
+            {!choosing.voor && (
+              // De herinnering uitzetten maakt er weer een gewoon lijstje van (F38).
+              <label className="herinnering-switch">
+                <span>Herinnering</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked
+                  onChange={() => {
+                    setChoosing(null)
+                    onHerinnering(false)
+                  }}
+                />
+              </label>
+            )}
             <div className="confirm-buttons">
               {AGENDAS.map((a) => (
                 <button

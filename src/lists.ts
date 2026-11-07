@@ -18,7 +18,10 @@ export interface Lijstje {
   id: string
   naam: string
   items: Item[]
-  /** Een herinneringslijstje: items met datum en tijd die je in je agenda zet (F32). */
+  /**
+   * Een herinneringslijstje: items met datum en tijd die je in je agenda zet (F32). `false`: de herinnering is
+   * uitgezet; de datums en de agenda blijven bewaard maar worden niet getoond (F38).
+   */
   herinnering?: boolean
   /** De agenda van dit herinneringslijstje, gekozen bij de eerste keer in de agenda zetten (F34). */
   agenda?: Agenda
@@ -35,7 +38,8 @@ export const CURRENT_KEY = `${KEY_PREFIX}huidig`
 export const HERINNERINGEN_KEY = `${KEY_PREFIX}herinneringen`
 
 export interface Herinneringen {
-  lijstjes: Record<string, { agenda?: Agenda }>
+  /** `uit`: de herinnering van dit lijstje is uitgezet, de datums blijven bewaard (F38). */
+  lijstjes: Record<string, { agenda?: Agenda; uit?: true }>
   items: Record<string, { wanneer?: string; inAgenda?: string }>
 }
 
@@ -181,8 +185,10 @@ export function basisLijstjes(lijstjes: readonly Lijstje[]): Lijstje[] {
 export function splitHerinneringen(lijstjes: readonly Lijstje[]): Herinneringen {
   const result: Herinneringen = { lijstjes: {}, items: {} }
   for (const l of lijstjes) {
-    if (!l.herinnering) continue
-    result.lijstjes[l.id] = l.agenda ? { agenda: l.agenda } : {}
+    // Een uitgezet herinneringslijstje bewaart zijn datums en agenda, om ze terug te zien als je hem weer aanzet (F38).
+    const bewaard = l.agenda || l.items.some((i) => i.wanneer || i.inAgenda)
+    if (!l.herinnering && !bewaard) continue
+    result.lijstjes[l.id] = { ...(l.agenda && { agenda: l.agenda }), ...(!l.herinnering && { uit: true as const }) }
     for (const i of l.items) {
       if (!i.wanneer && !i.inAgenda) continue
       result.items[i.id] = { ...(i.wanneer && { wanneer: i.wanneer }), ...(i.inAgenda && { inAgenda: i.inAgenda }) }
@@ -199,10 +205,11 @@ export function mergeHerinneringen(lijstjes: Lijstje[], value: unknown): Lijstje
   const items = typeof h.items === 'object' && h.items !== null ? h.items : {}
   return lijstjes.map((l) => {
     if (!Object.hasOwn(lists, l.id)) return l
-    const agenda = (lists[l.id] as { agenda?: unknown } | null)?.agenda
+    const extraLijstje = lists[l.id] as { agenda?: unknown; uit?: unknown } | null
+    const agenda = extraLijstje?.agenda
     return {
       ...l,
-      herinnering: true,
+      herinnering: extraLijstje?.uit !== true,
       ...(isAgenda(agenda) && { agenda }),
       items: l.items.map((i) => {
         const extra = Object.hasOwn(items, i.id) ? (items[i.id] as { wanneer?: unknown; inAgenda?: unknown } | null) : null
