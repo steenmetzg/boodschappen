@@ -38,6 +38,23 @@ describe('AC16: eigen opslag naast WoonWerk', () => {
   })
 
   it('bewaart de backupmap in een eigen database', () => {
-    expect(folderStoreSource).toContain("const DB_NAME = 'lijstjes-backupmap'")
+    expect(folderStoreSource).toContain('const DB_NAME = `${KEY_PREFIX}backupmap`')
+  })
+})
+
+describe('Testversie: eigen opslag naast de echte app', () => {
+  it('gebruikt "lijstjes-test-" in de testversie en "lijstjes-" in de echte app', async () => {
+    const echt = await import('./storageKey')
+    expect(echt.IS_TEST).toBe(false)
+    expect(echt.KEY_PREFIX).toBe('lijstjes-')
+    vi.stubEnv('VITE_TEST', '1')
+    vi.resetModules()
+    const test = await import('./storageKey')
+    const lists = await import('./lists')
+    expect(test.IS_TEST).toBe(true)
+    expect(lists.LISTS_KEY).toBe('lijstjes-test-data')
+    expect(lists.CURRENT_KEY).toBe('lijstjes-test-huidig')
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 })

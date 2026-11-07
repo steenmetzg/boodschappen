@@ -162,6 +162,6 @@ describe('AC18: versienummer', () => {
     const user = userEvent.setup()
     render(<App />)
     await openSettings(user)
-    expect(screen.getByText('Versie: 1.3.2')).toBeInTheDocument()
+    expect(screen.getByText('Versie: 1.3.3')).toBeInTheDocument()
   })
 })

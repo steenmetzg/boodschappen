@@ -1,5 +1,7 @@
 // De lijstjes en hun items: de gegevens, bewaren en ophalen, en de regels voor toevoegen (F3 t/m F5).
 
+import { KEY_PREFIX } from './storageKey'
+
 export interface Item {
   id: string
   tekst: string
@@ -14,8 +16,8 @@ export interface Lijstje {
 }
 
 /** Alle sleutels beginnen met "lijstjes-", omdat WoonWerk dezelfde opslag van de browser deelt (AC16). */
-export const LISTS_KEY = 'lijstjes-data'
-export const CURRENT_KEY = 'lijstjes-huidig'
+export const LISTS_KEY = `${KEY_PREFIX}data`
+export const CURRENT_KEY = `${KEY_PREFIX}huidig`
 
 export const MAX_NAAM = 30
 export const MAX_TEKST = 60

@@ -1,9 +1,14 @@
 name: Testen en online zetten
 
+# De echte app (branch main) staat op /lijstjes/, de testversie (branch TEST_BRANCH) op /lijstjes/test/.
+# Elke push naar een van beide zet beide opnieuw online; de echte app komt altijd van main.
 on:
   push:
-    branches: [main]
+    branches: [main, claude/project-thread-jutjqn]
   workflow_dispatch:
+
+env:
+  TEST_BRANCH: claude/project-thread-jutjqn
 
 permissions:
   contents: read
@@ -19,16 +24,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: app
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
+          cache-dependency-path: app/package-lock.json
+      - name: Echte app testen en bouwen
+        working-directory: app
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Testversie ophalen
+        id: test
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}" "$TEST_BRANCH"; then
+            echo "bestaat=ja" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.test.outputs.bestaat == 'ja'
+        with:
+          ref: ${{ env.TEST_BRANCH }}
+          path: test
+      - name: Testversie testen en bouwen
+        if: steps.test.outputs.bestaat == 'ja'
+        working-directory: test
+        env:
+          VITE_TEST: '1'
+        run: |
+          npm ci
+          npm test
+          npm run build -- --outDir ../app/dist/test --emptyOutDir
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: app/dist
 
   deploy:
     needs: build

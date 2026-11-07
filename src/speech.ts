@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { MAX_NAAM, MAX_TEKST } from './lists'
+import { KEY_PREFIX } from './storageKey'
 
 // Inspreken (F15): met de microfoonknop zeg je bijvoorbeeld "melk komma brood komma twee pakken koffie".
 // Alles van de spraakbediening staat in dit bestand, zodat het makkelijk weer weg kan.
@@ -58,7 +59,7 @@ const ERRORS: Record<string, string> = {
   'audio-capture': 'Er is geen microfoon gevonden.',
 }
 
-export const SPEECH_KEY = 'lijstjes-spraak-aan'
+export const SPEECH_KEY = `${KEY_PREFIX}spraak-aan`
 
 /** Staat de microfoonknop aan in de instellingen (F16)? Standaard wel. */
 export function loadSpeechEnabled(): boolean {
