@@ -404,9 +404,17 @@ describe('AC10: lijstje weggooien', () => {
     render(<App />)
     await openMyLists(user)
     await user.click(screen.getByRole('button', { name: 'Lijstje AH weggooien' }))
+    // De melding telt de seconden af.
+    const count = () => document.querySelector('.undo-count')?.textContent
+    expect(count()).toBe('10')
     act(() => {
-      vi.advanceTimersByTime(9000)
+      vi.advanceTimersByTime(3000)
     })
+    expect(count()).toBe('7')
+    act(() => {
+      vi.advanceTimersByTime(6000)
+    })
+    expect(count()).toBe('1')
     expect(screen.getByRole('button', { name: 'Ongedaan maken' })).toBeInTheDocument()
     act(() => {
       vi.advanceTimersByTime(1000)

@@ -764,6 +764,19 @@ h2 {
   color: var(--accent);
 }
 
+/* De seconden die je nog hebt om ongedaan te maken (F12). */
+.undo-count {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .item {
     transition: none;

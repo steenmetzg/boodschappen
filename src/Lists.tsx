@@ -213,11 +213,19 @@ export default function Lists({
   const scroll = useScrollList(lijstjes, onMove)
   const { header, list, addRow, bottom, hidden } = scroll
 
-  // De melding met Ongedaan maken verdwijnt na 10 seconden; dan is het weggooien definitief.
+  // De melding met Ongedaan maken verdwijnt na 10 seconden; dan is het weggooien definitief. De melding telt de
+  // seconden af (F12).
+  const [left, setLeft] = useState(UNDO_MS / 1000)
   useEffect(() => {
     if (!deleted) return
+    setLeft(UNDO_MS / 1000)
+    const start = Date.now()
+    const tick = setInterval(() => setLeft(Math.max(0, Math.ceil((UNDO_MS - (Date.now() - start)) / 1000))), 250)
     const timer = setTimeout(() => setDeleted(null), UNDO_MS)
-    return () => clearTimeout(timer)
+    return () => {
+      clearInterval(tick)
+      clearTimeout(timer)
+    }
   }, [deleted])
 
   function askRemove(l: Lijstje) {
@@ -394,6 +402,9 @@ export default function Lists({
             >
               <Undo2 size={18} strokeWidth={1.75} aria-hidden />
               Ongedaan maken
+              <span className="undo-count" aria-hidden>
+                {left}
+              </span>
             </button>
           </section>
         )}
