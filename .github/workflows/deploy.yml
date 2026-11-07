@@ -1,10 +1,11 @@
 name: Testen en online zetten
 
 # De echte app (branch main) staat op /lijstjes/, de testversie (branch TEST_BRANCH) op /lijstjes/test/.
-# Elke push naar een van beide zet beide opnieuw online; de echte app komt altijd van main.
+# Deze workflow draait altijd vanaf main (GitHub Pages mag alleen vanaf main online zetten). Een push naar
+# de testbranch start hem via testversie.yml; de echte app komt altijd van main.
 on:
   push:
-    branches: [main, claude/project-thread-jutjqn]
+    branches: [main]
   workflow_dispatch:
 
 env:
