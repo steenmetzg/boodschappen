@@ -862,23 +862,29 @@ h2 {
   font-size: 0.9rem;
 }
 
-/* Het belletje bij Nieuw lijstje: wit met grijs belletje, aan is blauw gevuld (F32). */
-.add-item .bell {
-  width: 32px;
-  height: 32px;
-  margin-left: 6px;
+/* Het belletje bij Nieuw lijstje, links op de plek van de greep: grijs, aan is blauw gevuld (F32). */
+.bell-slot {
+  overflow: visible;
+}
+
+.bell-slot .bell {
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
+  box-shadow: none;
+  background: none;
   color: var(--muted);
 }
 
-.lists-screen .add-item:not(:has(.mic)) .bell {
-  margin-right: 0;
-}
-
-.add-item .bell.on {
+.bell-slot .bell.on {
   background: var(--accent);
   box-shadow: var(--shadow-accent);
   color: #ffffff;
+}
+
+/* In de invoerregel van Mijn lijstjes iets ruimte tussen het belletje en het tekstveld. */
+.lists-screen .add-row .add-item {
+  margin-left: 6px;
 }
 
 .list-bell {

@@ -290,7 +290,18 @@ export default function Lists({
           style={{ bottom: scroll.bottomHeight }}
         >
           <MoreBelow count={hidden.below} words={['lijstje', 'lijstjes']} onClick={() => scroll.scrollPage(1)} />
-          <span className="item-grip" aria-hidden />
+          {/* Het belletje staat links, op de plek van de greep (F32). */}
+          <span className="item-grip bell-slot">
+            <button
+              type="button"
+              className={nieuwHerinnering ? 'icon-button bell on' : 'icon-button bell'}
+              aria-label="Herinneringslijstje"
+              aria-pressed={nieuwHerinnering}
+              onClick={onToggleHerinnering}
+            >
+              <Bell size={15} strokeWidth={2} aria-hidden />
+            </button>
+          </span>
           <form className="add-item" onSubmit={create}>
             <input
               type="text"
@@ -305,15 +316,6 @@ export default function Lists({
                 setError(null)
               }}
             />
-            <button
-              type="button"
-              className={nieuwHerinnering ? 'icon-button bell on' : 'icon-button bell'}
-              aria-label="Herinneringslijstje"
-              aria-pressed={nieuwHerinnering}
-              onClick={onToggleHerinnering}
-            >
-              <Bell size={16} strokeWidth={2} aria-hidden />
-            </button>
             {mic.show && (
               // Inspreken: wat je zegt, wordt de naam van het nieuwe lijstje (F31).
               <button
