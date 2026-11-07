@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
-import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bell, CalendarCheck, CalendarPlus, Check, GripVertical, Mic, Pencil, Trash2, X } from 'lucide-react'
 import { AGENDAS, formatWanneer, isVoorbij, opDatum, type Agenda } from './agenda'
 import { limitTyped, MAX_NAAM, MAX_TEKST, type Item, type Lijstje } from './lists'
 import { MoreAbove, MoreBelow } from './MoreItems'
@@ -284,7 +284,8 @@ export default function ListView({
               aria-label={`Naam van ${lijstje.naam} wijzigen`}
               onClick={() => setNaam(lijstje.naam)}
             >
-              {lijstje.naam}
+              <span className="title-text">{lijstje.naam}</span>
+              <Pencil className="title-pencil" size={18} strokeWidth={1.75} aria-hidden />
             </button>
           </h1>
         ) : (
