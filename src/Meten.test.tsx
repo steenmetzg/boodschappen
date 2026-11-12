@@ -35,7 +35,7 @@ describe('AC35 (F39): tellen bij starten en installeren', () => {
     setMetenVoorTest(ECHT, send)
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(display-mode: standalone)' }))
     startMeten()
-    expect(tellingen(send)).toEqual(['lijstjes-start-geinstalleerd'])
+    expect(tellingen(send)).toEqual(['lijstjes-start'])
   })
 
   it('telt een installatie apart, alleen als ik Installeren bevestig', async () => {
