@@ -64,8 +64,7 @@ function isInstalled(): boolean {
   return window.matchMedia?.('(display-mode: standalone)').matches ?? false
 }
 
-/** Eén keer bij het openen van de app: telt de start en luistert naar een installatie. */
+/** Eén keer bij het openen van de app: telt de start. Een installatie telt apart, zie installPrompt.ts. */
 export function startMeten() {
   tel(isInstalled() ? 'start-geinstalleerd' : 'start-browser')
-  window.addEventListener('appinstalled', () => tel('installatie'))
 }
