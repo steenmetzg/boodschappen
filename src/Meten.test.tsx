@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -38,12 +38,26 @@ describe('AC35 (F39): tellen bij starten en installeren', () => {
     expect(tellingen(send)).toEqual(['lijstjes-start-geinstalleerd'])
   })
 
-  it('telt een installatie', () => {
+  it('telt een installatie apart, alleen als ik Installeren bevestig', async () => {
     const send = vi.fn()
     setMetenVoorTest(ECHT, send)
-    startMeten()
+    const user = userEvent.setup()
+    render(<App />)
+    for (const outcome of ['dismissed', 'accepted'] as const) {
+      localStorage.clear()
+      const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+        prompt: vi.fn(async () => {}),
+        userChoice: Promise.resolve({ outcome }),
+      })
+      act(() => {
+        window.dispatchEvent(event)
+      })
+      await user.click(screen.getByRole('button', { name: 'Installeren' }))
+      if (outcome === 'dismissed') expect(tellingen(send)).toEqual([])
+    }
+    expect(tellingen(send)).toEqual(['lijstjes-installatie'])
     window.dispatchEvent(new Event('appinstalled'))
-    expect(tellingen(send)).toContain('lijstjes-installatie')
+    expect(tellingen(send)).toEqual(['lijstjes-installatie'])
   })
 
   it('stuurt alleen naam, titel, gebeurtenis en een willekeurig getal naar GoatCounter', () => {
