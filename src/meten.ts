@@ -8,10 +8,10 @@ const COUNT_URL = 'https://steenmetzg.goatcounter.com/count'
 /** Alleen de app online telt; de tests en de computer van de ontwikkelaar niet. */
 const LIVE_HOST = 'steenmetzg.github.io'
 
-export type Telling = 'start-geinstalleerd' | 'start-browser' | 'installatie'
+export type Telling = 'start' | 'start-browser' | 'installatie'
 
 const TITELS: Record<Telling, string> = {
-  'start-geinstalleerd': 'Lijstjes gestart (geïnstalleerd)',
+  'start': 'Lijstjes gestart',
   'start-browser': 'Lijstjes gestart (browser)',
   installatie: 'Lijstjes geïnstalleerd',
 }
@@ -66,5 +66,5 @@ function isInstalled(): boolean {
 
 /** Eén keer bij het openen van de app: telt de start. Een installatie telt apart, zie installPrompt.ts. */
 export function startMeten() {
-  tel(isInstalled() ? 'start-geinstalleerd' : 'start-browser')
+  tel(isInstalled() ? 'start' : 'start-browser')
 }
