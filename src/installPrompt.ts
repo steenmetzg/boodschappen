@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { KEY_PREFIX } from './storageKey'
+import { tel } from './meten'
 
 /** Het browsersignaal dat Chrome stuurt als de app installeerbaar is en nog niet geïnstalleerd. */
 export interface BeforeInstallPromptEvent extends Event {
@@ -100,6 +101,8 @@ export function useInstallPrompt() {
     await event.prompt()
     const { outcome } = await event.userChoice
     if (outcome === 'dismissed') notNow()
+    // Gebruik meten (F39): een installatie telt apart, als je in het venster van Chrome bevestigt.
+    else tel('installatie')
   }
 
   return {
