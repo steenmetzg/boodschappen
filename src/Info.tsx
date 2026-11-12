@@ -50,6 +50,10 @@ export default function Info({ onClose }: Props) {
         <h2>Instellingen</h2>
         {speechSupported() && <p>Zet de microfoon voor inspreken aan of uit.</p>}
         <p>Met een backup bewaar je al je lijstjes in een bestand en zet je ze terug, ook op een andere telefoon.</p>
+        <p>
+          Lijstjes telt anoniem hoe vaak de app wordt geïnstalleerd en geopend; wat je op je lijstjes zet, wordt nooit
+          verstuurd.
+        </p>
       </section>
     </main>
   )
