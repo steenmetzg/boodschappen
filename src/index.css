@@ -1148,3 +1148,8 @@ span.item-grip {
   outline: 2px solid var(--accent);
   outline-offset: 0;
 }
+
+/* Uitleg op een iPhone of iPad (F23): het Deel-icoon staat in de tekst. */
+.install p svg {
+  vertical-align: -3px;
+}

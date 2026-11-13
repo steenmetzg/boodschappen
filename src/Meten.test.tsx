@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { countUrl, setMetenVoorTest, startMeten, tel } from './meten'
+import { IOS_INSTALLATIE_KEY, countUrl, setMetenVoorTest, startMeten, tel } from './meten'
 
 vi.mock('./folderStore', () => ({
   loadStoredFolder: async () => null,
@@ -58,6 +58,33 @@ describe('AC35 (F39): tellen bij starten en installeren', () => {
     expect(tellingen(send)).toEqual(['lijstjes-installatie'])
     window.dispatchEvent(new Event('appinstalled'))
     expect(tellingen(send)).toEqual(['lijstjes-installatie'])
+  })
+
+  it('telt op een iPhone de eerste start vanaf het beginscherm ook als installatie, maar maar één keer', () => {
+    localStorage.removeItem(IOS_INSTALLATIE_KEY)
+    const send = vi.fn()
+    setMetenVoorTest(ECHT, send)
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
+    startMeten()
+    expect(tellingen(send)).toEqual(['lijstjes-start-browser'])
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(display-mode: standalone)' }))
+    startMeten()
+    startMeten()
+    expect(tellingen(send)).toEqual([
+      'lijstjes-start-browser',
+      'lijstjes-start-geinstalleerd',
+      'lijstjes-installatie',
+      'lijstjes-start-geinstalleerd',
+    ])
+  })
+
+  it('telt op Android de start vanaf het beginscherm niet als installatie', () => {
+    localStorage.removeItem(IOS_INSTALLATIE_KEY)
+    const send = vi.fn()
+    setMetenVoorTest(ECHT, send)
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(display-mode: standalone)' }))
+    startMeten()
+    expect(tellingen(send)).toEqual(['lijstjes-start-geinstalleerd'])
   })
 
   it('stuurt alleen naam, titel, gebeurtenis en een willekeurig getal naar GoatCounter', () => {
