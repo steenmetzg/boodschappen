@@ -2,7 +2,8 @@
 // Alleen de naam van de telling gaat weg, nooit wat je invult. Lijstjes gebruikt hetzelfde GoatCounter-account
 // als WoonWerk (code steenmetzg); elke telling begint met "lijstjes-" (de testversie met "lijstjes-test-"),
 // zodat je de apps uit elkaar houdt. Alles hierover staat in dit bestand, zodat de functie makkelijk weer weg kan.
-import { IS_TEST } from './storageKey'
+import { IS_TEST, KEY_PREFIX } from './storageKey'
+import { isIos } from './installPrompt'
 
 const COUNT_URL = 'https://steenmetzg.goatcounter.com/count'
 /** Alleen de app online telt; de tests en de computer van de ontwikkelaar niet. */
@@ -64,7 +65,27 @@ function isInstalled(): boolean {
   return window.matchMedia?.('(display-mode: standalone)').matches ?? false
 }
 
+/** Onthoudt dat de installatie op een iPhone of iPad al geteld is. */
+export const IOS_INSTALLATIE_KEY = `${KEY_PREFIX}installatie-geteld`
+
+/**
+ * Een iPhone of iPad meldt een installatie niet. Daarom telt daar de eerste start vanaf het beginscherm
+ * als installatie (vanaf versie 1.6.2); de app op het beginscherm heeft daar zijn eigen, nog lege opslag.
+ */
+function telIosInstallatie() {
+  try {
+    if (!isIos() || localStorage.getItem(IOS_INSTALLATIE_KEY)) return
+    localStorage.setItem(IOS_INSTALLATIE_KEY, '1')
+  } catch {
+    return
+  }
+  tel('installatie')
+}
+
 /** Eén keer bij het openen van de app: telt de start. Een installatie telt apart, zie installPrompt.ts. */
 export function startMeten() {
-  tel(isInstalled() ? 'start-geinstalleerd' : 'start-browser')
+  if (isInstalled()) {
+    tel('start-geinstalleerd')
+    telIosInstallatie()
+  } else tel('start-browser')
 }

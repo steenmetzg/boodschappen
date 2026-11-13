@@ -1,5 +1,17 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { Bell, BellOff, GripVertical, Info as InfoIcon, Mic, Pencil, Settings as SettingsIcon, Trash2, Undo2, X } from 'lucide-react'
+import {
+  Bell,
+  BellOff,
+  GripVertical,
+  Info as InfoIcon,
+  Mic,
+  Pencil,
+  Settings as SettingsIcon,
+  Share,
+  Trash2,
+  Undo2,
+  X,
+} from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import type { Notice } from './ListView'
 import { itemsText, MAX_NAAM, nameError, openCount, type Lijstje } from './lists'
@@ -27,7 +39,7 @@ interface Props {
   onUndoDelete: (deleted: Deleted) => void
   onOpenInfo: () => void
   onOpenSettings: () => void
-  install: { show: boolean; install: () => void; notNow: () => void }
+  install: { show: boolean; ios?: boolean; install: () => void; notNow: () => void }
   /** Een lijstje dat net vanuit dat lijstje is weggegooid, om ongedaan te maken (F8, F12). */
   justDeleted: Deleted | null
   notice: Notice | null
@@ -210,6 +222,8 @@ export default function Lists({
   const [deleted, setDeleted] = useState<Deleted | null>(justDeleted)
   // Een lijstje met items dat na bevestiging wordt weggegooid (F12).
   const [confirmDelete, setConfirmDelete] = useState<Lijstje | null>(null)
+  // Op een iPhone of iPad: de uitleg na "Hoe?" (F23).
+  const [installHow, setInstallHow] = useState(false)
   const scroll = useScrollList(lijstjes, onMove)
   const { header, list, addRow, bottom, hidden } = scroll
 
@@ -378,7 +392,7 @@ export default function Lists({
             <p role="alert">{error}</p>
           </section>
         )}
-        {install.show && (
+        {install.show && !install.ios && (
           <section className="install" aria-label="App installeren">
             <p>Lijstjes als app installeren?</p>
             <button type="button" onClick={install.notNow}>
@@ -387,6 +401,32 @@ export default function Lists({
             <button type="button" className="install-now" onClick={install.install}>
               Installeren
             </button>
+          </section>
+        )}
+        {install.show && install.ios && (
+          // Een iPhone of iPad kan het installeren niet zelf vragen: de app legt uit hoe het moet (F23).
+          <section className="install" aria-label="App installeren">
+            {installHow ? (
+              <>
+                <p>
+                  Tik op de Deel-knop <Share size={16} strokeWidth={2} aria-label="(vierkantje met pijl omhoog)" />{' '}
+                  (in Safari soms eerst op ⋯) en kies <strong>Zet op beginscherm</strong>.
+                </p>
+                <button type="button" className="install-now" onClick={install.notNow}>
+                  Oké
+                </button>
+              </>
+            ) : (
+              <>
+                <p>Lijstjes als app installeren?</p>
+                <button type="button" onClick={install.notNow}>
+                  Niet nu
+                </button>
+                <button type="button" className="install-now" onClick={() => setInstallHow(true)}>
+                  Hoe?
+                </button>
+              </>
+            )}
           </section>
         )}
         {deleted && (
